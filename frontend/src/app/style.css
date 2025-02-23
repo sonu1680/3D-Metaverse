@@ -1,0 +1,8 @@
+ .clip-shape {
+     width: 700px;
+     height: 200px;
+     background-color: #b3dce6;
+     /* This path draws an arc at the top from (0,50) to (100,50)
+       and another arc at the bottom from (100,150) to (0,150). */
+     clip-path: path("M 0,50 A 50,50 0 0 1 100,50 L 100,150 A 50,50 0 0 1 0,150 Z");
+ }

@@ -1,0 +1,58 @@
+"use client";
+import {
+  Environment,
+  OrbitControls,
+  OrthographicCamera,
+} from "@react-three/drei";
+import { Suspense, useRef } from "react";
+import { CharacterController } from "./CharacterController";
+import { Map } from "./Map";
+import { useRecoilValue } from "recoil";
+import { characterAtom } from "@/recoil/char";
+import { RemoteCharacter } from "@/types/remoteCharacterType";
+import { OrthographicCamera as OrthographicCameraType } from "three";
+import { Physics } from "@react-three/rapier";
+
+export const Experience: React.FC = () => {
+  const shadowCameraRef = useRef<OrthographicCameraType | null>(null);
+  const characters = useRecoilValue<RemoteCharacter[]>(characterAtom);
+// console.log(characters)
+  return (
+    <>
+      {/* <OrbitControls /> */}
+      <Environment preset="sunset" />
+      <directionalLight
+        intensity={0.65}
+        castShadow
+        position={[-15, 10, 15]}
+        shadow-mapSize-width={10000}
+        shadow-mapSize-height={10000}
+        shadow-bias={-0.00005}
+      >
+        <OrthographicCamera
+          left={-22}
+          right={15}
+          top={10}
+          bottom={-20}
+          ref={shadowCameraRef}
+          attach={"shadow-camera"}
+        />
+      </directionalLight>
+      <Suspense fallback={null}>
+        <Physics gravity={[0, -9.81, 0]}>
+          <Map scale={5} position={[-6, -10, 0]} model={"models/ground.glb"} />
+          {characters.map((data) => (
+            <CharacterController
+              key={data.id}
+              position={data.position}
+              host={data.host}
+              remoteAnimation={data.animation}
+              id={data.id}
+              color={data.color}
+            />
+          ))}
+        </Physics>
+      </Suspense>
+    </>
+  );
+};
