@@ -6,9 +6,11 @@ import Link from "next/link";
 import {  } from "./ui/button";
 import BuyButton from "./BuyButton";
 import { motion } from "motion/react"; 
+import { useRouter } from "next/navigation";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false); 
+  const router = useRouter();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -43,8 +45,8 @@ const Navbar = () => {
       </div>
 
       {/* Buy Button */}
-      <div className="hidden lg:flex">
-        <BuyButton title={'BUY FROGCOIN'} />
+      <div className="hidden lg:flex" onClick={()=>router.push('/room')} >
+        <BuyButton title={'BUY FROGCOIN'}  />
       </div>
 
       {/* Mobile Links (Animated using Framer Motion) */}

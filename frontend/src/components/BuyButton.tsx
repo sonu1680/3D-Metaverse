@@ -2,6 +2,7 @@ import React from 'react'
 import { Button } from './ui/button'
 
 const BuyButton = ({title}:{title:string}) => {
+  
   return (
     <Button
       className="bg-[#E3FF10] text-black min-w-[192px] h-[60px] text-[18px]  rounded-none font-bold "

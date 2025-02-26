@@ -20,9 +20,9 @@ export const SocketManager = () => {
   const setMap = useSetRecoilState(mapAtom);
   const setUser = useSetRecoilState(userAtom);
   const [isConnected, setIsConnected] = useState(false);
-
+  
   useEffect(() => {
-    if (!socket.connected) {
+    if (!socket.connected) { 
       socket.connect();
     }
     console.log(socket)
@@ -30,6 +30,7 @@ export const SocketManager = () => {
       console.log("User connected");
       setIsConnected(true);
     };
+
 
     const onDisconnect = () => {
       console.log("User disconnected");

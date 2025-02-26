@@ -8,15 +8,15 @@ import { Suspense, useRef } from "react";
 import { CharacterController } from "./CharacterController";
 import { Map } from "./Map";
 import { useRecoilValue } from "recoil";
-import { characterAtom } from "@/recoil/char";
 import { RemoteCharacter } from "@/types/remoteCharacterType";
 import { OrthographicCamera as OrthographicCameraType } from "three";
 import { Physics } from "@react-three/rapier";
+import { characterAtom } from "@/recoil/char";
 
 export const Experience: React.FC = () => {
   const shadowCameraRef = useRef<OrthographicCameraType | null>(null);
   const characters = useRecoilValue<RemoteCharacter[]>(characterAtom);
-// console.log(characters)
+ console.log(characters)
   return (
     <>
       {/* <OrbitControls /> */}
@@ -38,9 +38,8 @@ export const Experience: React.FC = () => {
           attach={"shadow-camera"}
         />
       </directionalLight>
-      <Suspense fallback={null}>
         <Physics gravity={[0, -9.81, 0]}>
-          <Map scale={5} position={[-6, -10, 0]} model={"models/ground.glb"} />
+          <Map scale={5} position={[-6, -10, 0]} model={"/models/ground.glb"} />
           {characters.map((data) => (
             <CharacterController
               key={data.id}
@@ -52,7 +51,6 @@ export const Experience: React.FC = () => {
             />
           ))}
         </Physics>
-      </Suspense>
     </>
   );
 };

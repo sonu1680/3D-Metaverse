@@ -6,10 +6,11 @@ import { MathUtils, Vector3, Group } from "three";
 import { useRecoilValue } from "recoil";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { Character } from "./Character";
-import { userAtom } from "../recoil/char";
 import { lerpAngle } from "../utils/LerpAngle";
 import { CharacterControllerProps } from "@/types/characterController";
-import { socket } from "./SocketManager";
+import { socket } from "@/hooks/useSocket";
+import { userAtom } from "@/recoil/char";
+import { roomAtom } from "@/recoil/roomId";
 
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   host,
@@ -18,6 +19,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   color,
   remoteAnimation,
 }) => {
+  const roomId=useRecoilValue(roomAtom)
   const WALK_SPEED = 4;
   const RUN_SPEED = 8;
   const ROTATION_SPEED = degToRad(1);
@@ -54,6 +56,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       socket.emit("move", {
         position: fixedPos,
         animation: remoteAnimation,
+        roomId: roomId
       });
     }
   };
