@@ -25,12 +25,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-bggreen`}
       >
-        <Navbar />
         <Providers>{children}</Providers>
       </body>
     </html>

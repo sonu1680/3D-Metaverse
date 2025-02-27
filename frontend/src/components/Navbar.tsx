@@ -46,7 +46,7 @@ const Navbar = () => {
 
       {/* Buy Button */}
       <div className="hidden lg:flex" onClick={()=>router.push('/room')} >
-        <BuyButton title={'BUY FROGCOIN'}  />
+        <BuyButton title={'GOT TO METAVERSE'}  />
       </div>
 
       {/* Mobile Links (Animated using Framer Motion) */}

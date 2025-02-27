@@ -15,7 +15,7 @@ const Page = ({params}:any) => {
   setRoomId(roomId);
   const setCharacter = useSetRecoilState(characterAtom);
 
-  const { chat, setChat, characters, sendChat, isConnected, disconnectSocket } =
+  const {  characters } =
     useSocket(roomId);
 
   useEffect(() => {

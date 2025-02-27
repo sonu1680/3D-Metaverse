@@ -1,9 +1,13 @@
-import { useKeyboardControls } from "@react-three/drei";
+import { Box, Sphere, useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { CapsuleCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
+import {
+  CapsuleCollider,
+  RapierRigidBody,
+  RigidBody,
+} from "@react-three/rapier";
 import { useEffect, useRef, useState } from "react";
 import { MathUtils, Vector3, Group } from "three";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { Character } from "./Character";
 import { lerpAngle } from "../utils/LerpAngle";
@@ -11,15 +15,18 @@ import { CharacterControllerProps } from "@/types/characterController";
 import { socket } from "@/hooks/useSocket";
 import { userAtom } from "@/recoil/char";
 import { roomAtom } from "@/recoil/roomId";
+import { myPostiotionAtom, videoUserAtom } from "@/recoil/myPositon";
+import { isPlayerClose } from "@/utils/isPlayerClose";
+import useUserVideoList from "@/hooks/useUserVideoList";
+import { round2 } from "@/utils/round2";
 
 export const CharacterController: React.FC<CharacterControllerProps> = ({
-  host,
   position,
   id,
   color,
   remoteAnimation,
 }) => {
-  const roomId=useRecoilValue(roomAtom)
+  const roomId = useRecoilValue(roomAtom);
   const WALK_SPEED = 4;
   const RUN_SPEED = 8;
   const ROTATION_SPEED = degToRad(1);
@@ -40,10 +47,11 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const [, get] = useKeyboardControls();
   const targetPosition = useRef<Vector3>(new Vector3());
   const currentPosition = useRef<Vector3>(new Vector3());
+  const [myPosition, setMyPosition] = useRecoilState(myPostiotionAtom);
+  const { videoUser, addUserToVideoList, removeUserFromVideoList } =
+    useUserVideoList();
 
   const emitInterval = useRef<NodeJS.Timeout | null>(null);
-
-  const round2 = (num: number): number => parseFloat(num.toFixed(2));
 
   const emitPosition = () => {
     if (rb.current) {
@@ -56,7 +64,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       socket.emit("move", {
         position: fixedPos,
         animation: remoteAnimation,
-        roomId: roomId
+        roomId: roomId,
       });
     }
   };
@@ -74,7 +82,6 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       emitInterval.current = null;
     }
   };
-
   useFrame(({ camera }) => {
     if (rb.current) {
       const controls = get();
@@ -82,6 +89,9 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       const movement = { x: 0, y: 0, z: 0 };
 
       if (user === id) {
+        // console.log('me',id,position)
+        setMyPosition(position);
+
         if (controls.forward) movement.z = 1;
         if (controls.backward) movement.z = -1;
         if (controls.left) movement.x = 1;
@@ -121,9 +131,25 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
 
         rb.current.setLinvel(vel, true);
       } else {
+        //loginc for video find diffrence of myPosition and other player
+if (myPosition && position) {
+  const playerIsClose = isPlayerClose(myPosition, position);
+
+  if (playerIsClose) {
+    // console.log("Player close by:", id);
+    if (!videoUser.includes(id)) {
+      addUserToVideoList(id); 
+    }
+  } else {
+    if (videoUser.includes(id)) {
+      removeUserFromVideoList(id); 
+    }
+  }
+}  
+
         targetPosition.current.set(
           round2(position[0]),
-          round2(position[1] ),
+          round2(position[1]),
           round2(position[2])
         );
 
@@ -198,6 +224,11 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
             animation={animation}
             color={color}
           />
+          {videoUser.includes(id) && (
+            <Box args={[3, 3,3]} position={[0, 3, 0]}>
+              <meshBasicMaterial color="red" />
+            </Box>
+          )}
         </group>
       </group>
       <CapsuleCollider args={[0.3, 1]} />

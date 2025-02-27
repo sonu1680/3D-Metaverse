@@ -10,9 +10,12 @@ import Phases from "@/components/section4/Phases";
 import Ending from "@/components/section5/Ending";
 import Footer from "@/components/section5/Footer";
 import "./style.css";
+import Navbar from "@/components/Navbar";
 const page = () => {
   return (
     <main className=" w-full h-[300vh] pt-32    ">
+      <Navbar />
+
       <section className=" section1 intro h-[80vh] md:h-[150vh] w-full  ">
         <Intro />
       </section>
@@ -31,7 +34,7 @@ const page = () => {
       </section>
 
       <section className=" section5 footer  ">
-      <Ending />
+        <Ending />
         <Footer />
       </section>
     </main>

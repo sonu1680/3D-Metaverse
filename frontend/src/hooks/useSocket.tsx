@@ -21,21 +21,21 @@ const useSocket = (roomId: string) => {
           socket.connect();
         }
     socket.on("connect", () => {
-      console.log("connected", socket.id);
+      // console.log("connected", socket.id);
     });
 
     socket.emit("joinRoom", roomId);
 
     socket.on("isRoomJoined", ({ roomId, characters }) => {
-      console.log(`Room joined successfully with room Id ${roomId}`);
-      console.log(characters);
+      // console.log(`Room joined successfully with room Id ${roomId}`);
+      // console.log(characters);
       setCharacters(characters);
       //@ts-ignore
       setUser(socket.id);
     });
 
     socket.on("getChat", (receivedChat) => {
-      console.log(receivedChat);
+      // console.log(receivedChat);
     });
 
     return () => {
@@ -57,7 +57,7 @@ const useSocket = (roomId: string) => {
     if (isConnected) {
       socket.disconnect();
       setIsConnected(false);
-      console.log("Socket disconnected");
+      // console.log("Socket disconnected");
     }
   };
 

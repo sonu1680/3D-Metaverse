@@ -16,7 +16,6 @@ import { characterAtom } from "@/recoil/char";
 export const Experience: React.FC = () => {
   const shadowCameraRef = useRef<OrthographicCameraType | null>(null);
   const characters = useRecoilValue<RemoteCharacter[]>(characterAtom);
- console.log(characters)
   return (
     <>
       {/* <OrbitControls /> */}
