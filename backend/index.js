@@ -13,84 +13,42 @@ const io = new Server(server, {
   },
 });
 
-const characters = {};
-
-const generateRandomPosition = () => [
-  Math.floor(Math.random() * 40),
-  -3,
-  Math.floor(Math.random() * 40),
-];
-
-const generateRandomColor = () =>
-  "#" +
-  Math.floor(Math.random() * 16777215)
-    .toString(16)
-    .padStart(6, "0");
+let senderSocket;
+let receiverSocket;
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  socket.on("joinRoom", (roomId) => {
-    socket.join(roomId);
-    socket.roomId = roomId;
-    if (!characters[roomId]) {
-      characters[roomId] = [];
+  socket.on("msg", (msg) => {
+    const data = msg;
+    console.log(msg);
+    switch (data.type) {
+      case "sender":
+        senderSocket = socket;
+        break;
+      case "receiver":
+        receiverSocket = socket;
+        break;
+      case "createOffer":
+        if (socket !== senderSocket) return;
+        receiverSocket.emit("msg", { type: "createOffer", sdp: data.sdp });
+        break;
+      case "answerOffer":
+        if (socket !== receiverSocket) return;
+        senderSocket.emit("msg", { type: "answerOffer", sdp: data.sdp });
+        break;
+
+      case "senderIce":
+        receiverSocket.emit("msg", { type: "senderIce", ice: data.ice });
+        break;
+      case "receiverIce":
+        senderSocket.emit("msg", { type: "receiverIce", ice: data.ice });
+        break;
     }
-    const newCharacter = {
-      id: socket.id,
-      position: generateRandomPosition(),
-      animation: "idle",
-      color: generateRandomColor(),
-      roomId: roomId,
-    };
-    characters[roomId].push(newCharacter);
-    const roomCharacter = characters[roomId];
-    io.to(roomId).emit("isRoomJoined", {
-      characters: roomCharacter,
-      roomId: roomId,
-    });
   });
-
-
-
-socket.on("move", ({ position, animation, roomId }) => {
-  if (!characters[roomId]) return;
-
-  const charRoom = characters[roomId];
-  const user = charRoom.find((user) => user.id === socket.id);
-
-  if (user) {
-    user.position = position;
-    user.animation = animation;
-
-    // Emit updated room characters
-    io.to(roomId).emit("isRoomJoined", {
-      characters: charRoom,
-      roomId,
-    });
-  }
-});
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
-    const roomId = socket.roomId;
-    const roomChar = characters[roomId];
-    const charIndex = roomChar.findIndex((e) => e.id === socket.id);
-    if (charIndex != -1) {
-      roomChar.splice(charIndex, 1);
-      if (roomChar.length == 0) {
-        delete characters[roomId];
-      }
-      else{
- const roomCharacter = characters[roomId];
-
-      io.to(roomId).emit("isRoomJoined", {
-        characters: roomCharacter,
-        roomId: roomId,
-      });
-    }
-      }
-     
   });
 });
 
