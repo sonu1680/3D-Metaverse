@@ -1,11 +1,8 @@
+import { socket } from "@/lib/socket";
 import { userAtom } from "@/recoil/char";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSetRecoilState } from "recoil";
-import { io, Socket } from "socket.io-client";
 
- export const socket: Socket = io("http://localhost:3001", {
-   autoConnect: false,
- });
 
 
 const useSocket = (roomId: string) => {
@@ -21,43 +18,37 @@ const useSocket = (roomId: string) => {
           socket.connect();
         }
     socket.on("connect", () => {
-      // console.log("connected", socket.id);
+      console.log("conected")
     });
 
-    socket.emit("joinRoom", roomId);
 
-    socket.on("isRoomJoined", ({ roomId, characters }) => {
-      // console.log(`Room joined successfully with room Id ${roomId}`);
-      // console.log(characters);
-      setCharacters(characters);
+
+    // socket.emit("joinRoom", roomId);
+socket.emit('gameData',JSON.stringify({type:'joinGame',roomId:roomId}))
+
+socket.on('gameData',((msg)=>{
+  const data=JSON.parse(msg)
+  switch(data.type){
+    case "isRoomJoined":
+         setCharacters(data.characters);
       //@ts-ignore
       setUser(socket.id);
-    });
-
-    socket.on("getChat", (receivedChat) => {
-      // console.log(receivedChat);
-    });
-
+  break;
+    }
+}))
+   
+ 
     return () => {
-      socket.emit("leaveRoom", roomId);
-      socket.off("connect");
-      socket.off("isRoomJoined");
-      socket.off("getChat");
       socket.disconnect();
     };
   }, [roomId, socket]);
 
-  const sendChat = (message: string) => {
-    if (!roomId) return;
-    socket.emit("sendChat", message, roomId);
-    setChat(""); 
-  };
+
 
   const disconnectSocket = () => {
     if (isConnected) {
       socket.disconnect();
       setIsConnected(false);
-      // console.log("Socket disconnected");
     }
   };
 
@@ -65,7 +56,6 @@ const useSocket = (roomId: string) => {
     chat,
     setChat,
     characters,
-    sendChat,
     isConnected,
     disconnectSocket,
   };

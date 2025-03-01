@@ -12,13 +12,15 @@ import { degToRad } from "three/src/math/MathUtils.js";
 import { Character } from "./Character";
 import { lerpAngle } from "../utils/LerpAngle";
 import { CharacterControllerProps } from "@/types/characterController";
-import { socket } from "@/hooks/useSocket";
 import { userAtom } from "@/recoil/char";
 import { roomAtom } from "@/recoil/roomId";
 import { myPostiotionAtom, videoUserAtom } from "@/recoil/myPositon";
 import { isPlayerClose } from "@/utils/isPlayerClose";
 import useUserVideoList from "@/hooks/useUserVideoList";
 import { round2 } from "@/utils/round2";
+import { socket } from "@/lib/socket";
+import useSendVideoCall from "@/hooks/useSendVideoCall";
+import useReceiveVideoCall from "@/hooks/useReceiveVideoCall";
 
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
@@ -51,7 +53,14 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const { videoUser, addUserToVideoList, removeUserFromVideoList } =
     useUserVideoList();
 
-  const emitInterval = useRef<NodeJS.Timeout | null>(null);
+  const emitInterval = useRef<NodeJS.Timeout | null>(null);;
+  const { handleSend } = useSendVideoCall();
+  const { handleReceive } = useReceiveVideoCall();
+
+
+const isVideoCall=useRef(true)
+  console.log("video", isVideoCall.current);
+
 
   const emitPosition = () => {
     if (rb.current) {
@@ -61,11 +70,12 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
         round2(pos.y),
         round2(pos.z),
       ];
-      socket.emit("move", {
+      socket.emit("gameData",JSON.stringify({
         position: fixedPos,
         animation: remoteAnimation,
         roomId: roomId,
-      });
+        type:'CharacterMove'
+      }));
     }
   };
 
@@ -136,13 +146,20 @@ if (myPosition && position) {
   const playerIsClose = isPlayerClose(myPosition, position);
 
   if (playerIsClose) {
-    // console.log("Player close by:", id);
+    isVideoCall.current=false;
+   handleSend;
+   handleReceive
+     console.log("Player close by:", id);
+
     if (!videoUser.includes(id)) {
       addUserToVideoList(id); 
     }
   } else {
     if (videoUser.includes(id)) {
       removeUserFromVideoList(id); 
+          isVideoCall.current = true;
+          console.log('player is not close')
+
     }
   }
 }  

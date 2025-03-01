@@ -1,7 +1,8 @@
-"use client";
 import { Server } from "socket.io";
 import express from "express";
 import http from "http";
+import { generateRandomPosition } from "./utils/generatePosition.js";
+import { generateRandomColor } from "./utils/generateColor.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -13,41 +14,138 @@ const io = new Server(server, {
   },
 });
 
+const characters = {};
 let peers = {};
+
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-  console.log(peers, "before");
-  socket.on("msg", (msg) => {
+  //logic for multiplayer game
+  socket.on("gameData", (msg) => {
+    const data = JSON.parse(msg);
+    console.log("multi", data);
+
+    switch (data.type) {
+      case "joinGame":
+        const roomId = data.roomId;
+        socket.join(roomId);
+        socket.roomId = roomId;
+
+        if (!characters[roomId]) {
+          characters[roomId] = [];
+        }
+
+        const newCharacter = {
+          id: socket.id,
+          position: generateRandomPosition(),
+          animation: "idle",
+          color: generateRandomColor(),
+          roomId: roomId,
+        };
+
+        characters[roomId].push(newCharacter);
+        const roomCharacter = characters[roomId];
+
+        io.to(roomId).emit(
+          "gameData",
+          JSON.stringify({
+            characters: roomCharacter,
+            roomId: roomId,
+            type: "isRoomJoined",
+          })
+        );
+        break;
+      ///on
+      case "CharacterMove":
+        const { position, animation, roomId: moveRoomId } = data;
+        if (!characters[moveRoomId]) return;
+
+        const charRoom = characters[moveRoomId];
+        const user = charRoom.find((user) => user.id === socket.id);
+
+        if (user) {
+          user.position = position;
+          user.animation = animation;
+          // Emit updated room characters
+          io.to(moveRoomId).emit(
+            "gameData",
+            JSON.stringify({
+              characters: charRoom,
+              roomId: moveRoomId,
+              type: "isRoomJoined",
+            })
+          );
+        }
+        break;
+    }
+  });
+
+  //logic for videocall
+
+  socket.on("videoCall", (msg) => {
     const data = msg;
+    console.log("video", data);
+
     switch (data.type) {
       case "register":
-        console.log("register", socket.id);
         peers[data.peerid] = socket;
-
         break;
 
       case "createOffer":
         if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("msg", { type: "createOffer", sdp: data.sdp });
+        peers[data.peerid].emit("videoCall", {
+          type: "createOffer",
+          sdp: data.sdp,
+        });
 
         break;
       case "answerOffer":
         if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("msg", { type: "answerOffer", sdp: data.sdp });
+        peers[data.peerid].emit("videoCall", {
+          type: "answerOffer",
+          sdp: data.sdp,
+        });
         break;
 
       case "senderIce":
         if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("msg", { type: "senderIce", ice: data.ice });
+        peers[data.peerid].emit("videoCall", {
+          type: "senderIce",
+          ice: data.ice,
+        });
         break;
       case "receiverIce":
         if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("msg", { type: "receiverIce", ice: data.ice });
+        peers[data.peerid].emit("videoCall", {
+          type: "receiverIce",
+          ice: data.ice,
+        });
         break;
     }
   });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
+    const roomId = socket.roomId;
+    const roomChar = characters[roomId];
+    if (!roomChar) return;
+
+    const charIndex = roomChar.findIndex((e) => e.id === socket.id);
+    if (charIndex !== -1) {
+      roomChar.splice(charIndex, 1);
+      if (roomChar.length === 0) {
+        delete characters[roomId];
+      } else {
+        const roomCharacter = characters[roomId];
+        io.to(roomId).emit(
+          "gameData",
+          JSON.stringify({
+            characters: roomCharacter,
+            roomId: roomId,
+            type: "isRoomJoined",
+          })
+        );
+      }
+    }
   });
 });
 
