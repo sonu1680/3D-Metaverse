@@ -13,40 +13,39 @@ const io = new Server(server, {
   },
 });
 
-let senderSocket;
-let receiverSocket;
-
+let peers = {};
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
-
+  console.log(peers, "before");
   socket.on("msg", (msg) => {
     const data = msg;
-    console.log(msg);
     switch (data.type) {
-      case "sender":
-        senderSocket = socket;
+      case "register":
+        console.log("register", socket.id);
+        peers[data.peerid] = socket;
+
         break;
-      case "receiver":
-        receiverSocket = socket;
-        break;
+
       case "createOffer":
-        if (socket !== senderSocket) return;
-        receiverSocket.emit("msg", { type: "createOffer", sdp: data.sdp });
+        if (!peers[data.peerid]) return;
+        peers[data.peerid].emit("msg", { type: "createOffer", sdp: data.sdp });
+
         break;
       case "answerOffer":
-        if (socket !== receiverSocket) return;
-        senderSocket.emit("msg", { type: "answerOffer", sdp: data.sdp });
+        if (!peers[data.peerid]) return;
+        peers[data.peerid].emit("msg", { type: "answerOffer", sdp: data.sdp });
         break;
 
       case "senderIce":
-        receiverSocket.emit("msg", { type: "senderIce", ice: data.ice });
+        if (!peers[data.peerid]) return;
+        peers[data.peerid].emit("msg", { type: "senderIce", ice: data.ice });
         break;
       case "receiverIce":
-        senderSocket.emit("msg", { type: "receiverIce", ice: data.ice });
+        if (!peers[data.peerid]) return;
+        peers[data.peerid].emit("msg", { type: "receiverIce", ice: data.ice });
         break;
     }
   });
-
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
