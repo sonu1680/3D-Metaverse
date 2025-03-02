@@ -15,111 +15,92 @@ const io = new Server(server, {
 });
 
 const characters = {};
-let peers = {};
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-  //logic for multiplayer game
-  socket.on("gameData", (msg) => {
-    const data = JSON.parse(msg);
-    console.log("multi", data);
 
-    switch (data.type) {
-      case "joinGame":
-        const roomId = data.roomId;
-        socket.join(roomId);
-        socket.roomId = roomId;
+   //logic for multiplayer game
+    socket.on("gameData", (msg) => {
 
-        if (!characters[roomId]) {
-          characters[roomId] = [];
-        }
-
-        const newCharacter = {
-          id: socket.id,
-          position: generateRandomPosition(),
-          animation: "idle",
-          color: generateRandomColor(),
-          roomId: roomId,
-        };
-
-        characters[roomId].push(newCharacter);
-        const roomCharacter = characters[roomId];
-
-        io.to(roomId).emit(
-          "gameData",
-          JSON.stringify({
-            characters: roomCharacter,
+      const data = JSON.parse(msg);
+      console.log("multi");
+  
+      switch (data.type) {
+        case "joinGame":
+          const roomId = data.roomId;
+          socket.join(roomId);
+          socket.roomId = roomId;
+  
+          if (!characters[roomId]) {
+            characters[roomId] = [];
+          }
+  
+          const newCharacter = {
+            id: socket.id,
+            position: generateRandomPosition(),
+            animation: "idle",
+            color: generateRandomColor(),
             roomId: roomId,
-            type: "isRoomJoined",
-          })
-        );
-        break;
-      ///on
-      case "CharacterMove":
-        const { position, animation, roomId: moveRoomId } = data;
-        if (!characters[moveRoomId]) return;
-
-        const charRoom = characters[moveRoomId];
-        const user = charRoom.find((user) => user.id === socket.id);
-
-        if (user) {
-          user.position = position;
-          user.animation = animation;
-          // Emit updated room characters
-          io.to(moveRoomId).emit(
+          };
+  
+          characters[roomId].push(newCharacter);
+          const roomCharacter = characters[roomId];
+  
+          io.to(roomId).emit(
             "gameData",
             JSON.stringify({
-              characters: charRoom,
-              roomId: moveRoomId,
+              characters: roomCharacter,
+              roomId: roomId,
               type: "isRoomJoined",
             })
           );
-        }
-        break;
-    }
-  });
-
+          break;
+        ///on
+        case "CharacterMove":
+          const { position, animation, roomId: moveRoomId } = data;
+          if (!characters[moveRoomId]) return;
+  
+          const charRoom = characters[moveRoomId];
+          const user = charRoom.find((user) => user.id === socket.id);
+  
+          if (user) {
+            user.position = position;
+            user.animation = animation;
+            // Emit updated room characters
+            io.to(moveRoomId).emit(
+              "gameData",
+              JSON.stringify({
+                characters: charRoom,
+                roomId: moveRoomId,
+                type: "isRoomJoined",
+              })
+            );
+          }
+          break;
+      }
+    });
   //logic for videocall
-
   socket.on("videoCall", (msg) => {
-    const data = msg;
-    console.log("video", data);
+    console.log('videcall',msg)
 
+    const data = JSON.parse(msg);
     switch (data.type) {
       case "register":
-        peers[data.peerid] = socket;
+        socket.join(data.room);
+
         break;
-
       case "createOffer":
-        if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("videoCall", {
-          type: "createOffer",
-          sdp: data.sdp,
-        });
-
+        socket.to(data.room).emit("videoCall", msg);
         break;
       case "answerOffer":
-        if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("videoCall", {
-          type: "answerOffer",
-          sdp: data.sdp,
-        });
+        socket.to(data.room).emit("videoCall", msg);
         break;
+      case "answerOfferOne":
+        socket.to(data.room).emit("videoCall", msg);
+        break;
+        case 'iceCandidate':
+                  socket.to(data.room).emit("videoCall", msg);
+                  break;
 
-      case "senderIce":
-        if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("videoCall", {
-          type: "senderIce",
-          ice: data.ice,
-        });
-        break;
-      case "receiverIce":
-        if (!peers[data.peerid]) return;
-        peers[data.peerid].emit("videoCall", {
-          type: "receiverIce",
-          ice: data.ice,
-        });
-        break;
     }
   });
 

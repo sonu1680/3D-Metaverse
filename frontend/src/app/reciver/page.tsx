@@ -1,14 +1,22 @@
 "use client";
-import useReceiveVideoCall from "@/hooks/useReceiveVideoCall";
-import React  from "react";
+import useCall from "@/hooks/useCall";
+import useSendVideoCall from "@/hooks/useSendVideoCall";
+import React from "react";
 
 const page = () => {
-    const { handleReceive, remoteVideo, myVideo } = useReceiveVideoCall();
+  // const { handleSend, remoteVideo, myVideo, endcall } = useSendVideoCall();
 
+  const { callFun } = useCall();
   return (
     <>
-      <div>reciver</div>
+      <button className="p-10 bg-red-400 rounded-lg" onClick={callFun}>
+        sender
+      </button>
+      {/* <button className="p-10 bg-red-400 rounded-lg" onClick={endcall}>
+        end call
+      </button>
       <div className="c w-96 h-96 p-2 bg-blue-400">
+        <h2>remote video</h2>
         <video
           className="h-40 w-40 bg-red-500"
           ref={remoteVideo}
@@ -22,10 +30,7 @@ const page = () => {
           autoPlay
           playsInline
         />
-      </div>
-      <button className="p-10 bg-red-400 rounded-lg" onClick={handleReceive}>
-        sender
-      </button>
+      </div> */}
     </>
   );
 };

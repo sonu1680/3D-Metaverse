@@ -5,7 +5,7 @@ import {
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MathUtils, Vector3, Group } from "three";
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { degToRad } from "three/src/math/MathUtils.js";
@@ -14,13 +14,13 @@ import { lerpAngle } from "../utils/LerpAngle";
 import { CharacterControllerProps } from "@/types/characterController";
 import { userAtom } from "@/recoil/char";
 import { roomAtom } from "@/recoil/roomId";
-import { myPostiotionAtom, videoUserAtom } from "@/recoil/myPositon";
+import { isPlayerCloseAtom, myPostiotionAtom, videoUserAtom } from "@/recoil/myPositon";
 import { isPlayerClose } from "@/utils/isPlayerClose";
 import useUserVideoList from "@/hooks/useUserVideoList";
 import { round2 } from "@/utils/round2";
 import { socket } from "@/lib/socket";
-import useSendVideoCall from "@/hooks/useSendVideoCall";
-import useReceiveVideoCall from "@/hooks/useReceiveVideoCall";
+
+import useCall from "@/hooks/useCall";
 
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
@@ -52,14 +52,26 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const [myPosition, setMyPosition] = useRecoilState(myPostiotionAtom);
   const { videoUser, addUserToVideoList, removeUserFromVideoList } =
     useUserVideoList();
-
+   const { callFun, myVideo, remoteVideo, endCall } = useCall();
+const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
   const emitInterval = useRef<NodeJS.Timeout | null>(null);;
-  const { handleSend } = useSendVideoCall();
-  const { handleReceive } = useReceiveVideoCall();
 
 
-const isVideoCall=useRef(true)
-  console.log("video", isVideoCall.current);
+
+  // useEffect(() => {
+  //   console.log(playerClose)
+  //   let h=0
+
+  //   if (playerClose) {
+  //     h++
+  //     callFun();
+  //     console.log('call',h)
+  //   } else {
+  //     // endCall();
+  //           console.log("end");
+
+  //   }
+  // }, [playerClose]);
 
 
   const emitPosition = () => {
@@ -146,19 +158,17 @@ if (myPosition && position) {
   const playerIsClose = isPlayerClose(myPosition, position);
 
   if (playerIsClose) {
-    isVideoCall.current=false;
-   handleSend;
-   handleReceive
-     console.log("Player close by:", id);
-
+    
     if (!videoUser.includes(id)) {
+      setPlayerClose(true);
       addUserToVideoList(id); 
     }
   } else {
     if (videoUser.includes(id)) {
       removeUserFromVideoList(id); 
-          isVideoCall.current = true;
-          console.log('player is not close')
+            setPlayerClose(false);
+
+        
 
     }
   }

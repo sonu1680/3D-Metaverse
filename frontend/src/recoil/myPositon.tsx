@@ -10,3 +10,9 @@ export const videoUserAtom = atom<string[]>({
   key: "videoUserAtom",
   default: [],
 });
+
+
+export const isPlayerCloseAtom = atom<boolean>({
+  key: "isPlayerCloseAtom",
+  default: false,
+});
