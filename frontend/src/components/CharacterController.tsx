@@ -1,32 +1,32 @@
-import { Box, Sphere, useKeyboardControls } from "@react-three/drei";
+import { Box, Plane, useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { MathUtils, Vector3, Group } from "three";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { degToRad } from "three/src/math/MathUtils.js";
 import { Character } from "./Character";
 import { lerpAngle } from "../utils/LerpAngle";
 import { CharacterControllerProps } from "@/types/characterController";
 import { userAtom } from "@/recoil/char";
 import { roomAtom } from "@/recoil/roomId";
-import { isPlayerCloseAtom, myPostiotionAtom, videoUserAtom } from "@/recoil/myPositon";
+import { isPlayerCloseAtom, myPostiotionAtom } from "@/recoil/myPositon";
 import { isPlayerClose } from "@/utils/isPlayerClose";
 import useUserVideoList from "@/hooks/useUserVideoList";
 import { round2 } from "@/utils/round2";
 import { socket } from "@/lib/socket";
-
-import useCall from "@/hooks/useCall";
-
+import { VideoMaterial } from "./videoMaterial";
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
   id,
   color,
   remoteAnimation,
+  myVideo,
+  remoteVideo,
 }) => {
   const roomId = useRecoilValue(roomAtom);
   const WALK_SPEED = 4;
@@ -52,28 +52,9 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const [myPosition, setMyPosition] = useRecoilState(myPostiotionAtom);
   const { videoUser, addUserToVideoList, removeUserFromVideoList } =
     useUserVideoList();
-   const { callFun, myVideo, remoteVideo, endCall } = useCall();
-const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
-  const emitInterval = useRef<NodeJS.Timeout | null>(null);;
 
-
-
-  // useEffect(() => {
-  //   console.log(playerClose)
-  //   let h=0
-
-  //   if (playerClose) {
-  //     h++
-  //     callFun();
-  //     console.log('call',h)
-  //   } else {
-  //     // endCall();
-  //           console.log("end");
-
-  //   }
-  // }, [playerClose]);
-
-
+  const emitInterval = useRef<NodeJS.Timeout | null>(null);
+  const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
   const emitPosition = () => {
     if (rb.current) {
       const pos = rb.current.translation();
@@ -82,12 +63,15 @@ const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
         round2(pos.y),
         round2(pos.z),
       ];
-      socket.emit("gameData",JSON.stringify({
-        position: fixedPos,
-        animation: remoteAnimation,
-        roomId: roomId,
-        type:'CharacterMove'
-      }));
+      socket.emit(
+        "gameData",
+        JSON.stringify({
+          position: fixedPos,
+          animation: remoteAnimation,
+          roomId: roomId,
+          type: "CharacterMove",
+        })
+      );
     }
   };
 
@@ -153,26 +137,22 @@ const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
 
         rb.current.setLinvel(vel, true);
       } else {
-        //loginc for video find diffrence of myPosition and other player
-if (myPosition && position) {
-  const playerIsClose = isPlayerClose(myPosition, position);
+        //logic for video find diffrence of myPosition and other player
 
-  if (playerIsClose) {
-    
-    if (!videoUser.includes(id)) {
-      setPlayerClose(true);
-      addUserToVideoList(id); 
-    }
-  } else {
-    if (videoUser.includes(id)) {
-      removeUserFromVideoList(id); 
-            setPlayerClose(false);
-
-        
-
-    }
-  }
-}  
+        if (myPosition && position) {
+          const playerIsClose: Boolean = isPlayerClose(myPosition, position);
+          if (playerIsClose) {
+            if (!videoUser.includes(id)) {
+              setPlayerClose(true);
+              addUserToVideoList(id);
+            }
+          } else {
+            if (videoUser.includes(id)) {
+              removeUserFromVideoList(id);
+              setPlayerClose(false);
+            }
+          }
+        }
 
         targetPosition.current.set(
           round2(position[0]),
@@ -252,11 +232,21 @@ if (myPosition && position) {
             color={color}
           />
           {videoUser.includes(id) && (
-            <Box args={[3, 3,3]} position={[0, 3, 0]}>
-              <meshBasicMaterial color="red" />
-            </Box>
+            <Plane position-y={6} args={[6, 3, 3]}>
+              <Suspense fallback={<meshStandardMaterial color={"red"} />}>
+                <VideoMaterial src={remoteVideo} />
+              </Suspense>
+            </Plane>
           )}
         </group>
+        {/* activate video call for me*/}
+        {user === id && playerClose && (
+          <Plane position-y={3} args={[6, 3, 3]}>
+            <Suspense fallback={<meshStandardMaterial color={"red"} />}>
+              <VideoMaterial src={myVideo} />
+            </Suspense>
+          </Plane>
+        )}
       </group>
       <CapsuleCollider args={[0.3, 1]} />
     </RigidBody>

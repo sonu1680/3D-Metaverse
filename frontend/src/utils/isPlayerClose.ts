@@ -5,10 +5,8 @@ export const isPlayerClose = (
 ) => {
   const [myX, , myZ] = myPos;
   const [otherX, , otherZ] = otherPos;
-
   const distanceX = Math.abs(myX - otherX);
   const distanceZ = Math.abs(myZ - otherZ);
-
   return distanceX <= threshold && distanceZ <= threshold;
 };
 

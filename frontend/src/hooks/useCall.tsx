@@ -1,11 +1,13 @@
 import { socket } from "@/lib/socket";
-import React, { useEffect, useRef } from "react";
-
+import React, { useEffect, useRef, useState } from "react";
+import { useSetRecoilState } from "recoil";
 const useCall = () => {
+  console.log("sonu error use call ")
   const me = useRef<RTCPeerConnection|null>(null);
   const room = "123";
-  const myVideo = useRef<HTMLVideoElement>(null);
-  const remoteVideo = useRef<HTMLVideoElement>(null);
+    const [myVideo, setMyVideo] = useState<MediaStream | null>(null);
+      const [remoteVideo, setRemoteVideo] = useState<MediaStream | null>(null);
+
   useEffect(() => {
     if (!socket.connected) {
       socket.connect();
@@ -30,7 +32,7 @@ const useCall = () => {
       switch (data.type) {
         case "createOffer":
           console.log("inside createOffer");
-          //after geeting offer setting the offer in local and acreating answer
+          //after getting offer setting the offer in local and acreating answer
           await me.current.setRemoteDescription(data.sdp);
           await startStream();
           const answer = await me.current.createAnswer();
@@ -58,8 +60,34 @@ const useCall = () => {
             await me.current.addIceCandidate(data.candidate);
           }
           break;
+          case 'endCall':
+            console.log('call ended remote')
+            endCall();
+            break;
+        default:
+          console.log("error rtc")  
       }
     });
+ const cleanupRTC = () => {
+   if (me.current) {
+     me.current.close();
+     me.current = null;
+   }
+ };
+
+ //clean up function
+ const cleanupSocket = () => {
+   if (socket) {
+     socket.off("videoCall"); 
+     if (socket.connected) {
+       socket.disconnect(); 
+     }
+   }
+ };
+     return () => {
+       cleanupRTC();
+       cleanupSocket();
+     };
   }, []);
 
   const setupConnectionEvents = (peer: RTCPeerConnection) => {
@@ -77,30 +105,30 @@ const useCall = () => {
     };
 
     peer.ontrack = (event) => {
-      if (remoteVideo.current) {
-        remoteVideo.current.srcObject = event.streams[0];
-        remoteVideo.current.play();
-      }
+      setRemoteVideo(event.streams[0]);
+    
     };
   };
 
   const startStream = async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-
+    setMyVideo(stream);
       if (!me.current) return;
 
       stream
         .getTracks()
         .forEach((track) => me.current!.addTrack(track, stream));
 
-      if (myVideo.current) {
-        myVideo.current.srcObject = stream;
-        myVideo.current.play();
-      }
+      // if (myVideo.current) {
+      //   myVideo.current = stream;
+      //   myVideo.current.play();
+
+        
+      // }
     } catch (error) {
       console.error("Error accessing media devices:", error);
     }
@@ -125,9 +153,11 @@ const useCall = () => {
   };
 
   const endCall=async()=>{
+    
     if(me.current){
-         me.current.close()
-         me.current=null
+      me.current.close()
+      me.current=null
+      console.log("call ended current");
 
 
     }

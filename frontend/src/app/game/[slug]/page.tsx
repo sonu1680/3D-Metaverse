@@ -1,22 +1,36 @@
 "use client";
 import { Experience } from "@/components/Experience";
+import useCall from "@/hooks/useCall";
 import useSocket from "@/hooks/useSocket";
+import { socket } from "@/lib/socket";
 import { characterAtom } from "@/recoil/char";
+import { isPlayerCloseAtom } from "@/recoil/myPositon";
 import { roomAtom } from "@/recoil/roomId";
 import { keyboardMap } from "@/utils/keyboardMap";
 import { KeyboardControls } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import React, { Suspense, useEffect, useState } from "react";
-import { useSetRecoilState } from "recoil";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 
 const Page = ({params}:any) => {
   const roomId = params.slug;
   const setRoomId = useSetRecoilState(roomAtom);
   setRoomId(roomId);
   const setCharacter = useSetRecoilState(characterAtom);
+  const { characters } = useSocket(roomId);
+  const { callFun, endCall ,myVideo,remoteVideo} = useCall();
+  const player = useRecoilValue(isPlayerCloseAtom);
+  useMemo(() => {
+    if (player) {
+      console.log("close");
+        callFun(); 
+    } else {
+      console.log("not close");
+        endCall();
+        socket.emit("videoCall",JSON.stringify({type:'endCall',room:'123'}))
+    }
+  }, [player]); 
 
-  const {  characters } =
-    useSocket(roomId);
 
   useEffect(() => {
     if (characters.length > 0) {
@@ -37,7 +51,7 @@ const Page = ({params}:any) => {
       <Suspense fallback={null}>
         <KeyboardControls map={keyboardMap}>
           <Canvas shadows camera={{ position: [3, 3, 3], near: 0.1, fov: 40 }}>
-            <Experience />
+            <Experience myVideo={myVideo} remoteVideo={remoteVideo} />
           </Canvas>
         </KeyboardControls>
       </Suspense>

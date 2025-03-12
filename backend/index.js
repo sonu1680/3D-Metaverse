@@ -22,7 +22,6 @@ io.on("connection", (socket) => {
     socket.on("gameData", (msg) => {
 
       const data = JSON.parse(msg);
-      console.log("multi");
   
       switch (data.type) {
         case "joinGame":
@@ -98,8 +97,11 @@ io.on("connection", (socket) => {
         socket.to(data.room).emit("videoCall", msg);
         break;
         case 'iceCandidate':
-                  socket.to(data.room).emit("videoCall", msg);
-                  break;
+            socket.to(data.room).emit("videoCall", msg);
+            break;
+         case 'endCall':
+          console.log(data)
+          socket.to(data.room).emit("videoCall",msg)   
 
     }
   });

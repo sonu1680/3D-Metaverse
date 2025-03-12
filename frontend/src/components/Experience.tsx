@@ -4,7 +4,7 @@ import {
   OrbitControls,
   OrthographicCamera,
 } from "@react-three/drei";
-import { Suspense, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { CharacterController } from "./CharacterController";
 import { Map } from "./Map";
 import { useRecoilValue } from "recoil";
@@ -13,9 +13,11 @@ import { OrthographicCamera as OrthographicCameraType } from "three";
 import { Physics } from "@react-three/rapier";
 import { characterAtom } from "@/recoil/char";
 
-export const Experience: React.FC = () => {
+
+export const Experience = ({ myVideo, remoteVideo }: any | null) => {
   const shadowCameraRef = useRef<OrthographicCameraType | null>(null);
   const characters = useRecoilValue<RemoteCharacter[]>(characterAtom);
+
   return (
     <>
       {/* <OrbitControls /> */}
@@ -37,19 +39,21 @@ export const Experience: React.FC = () => {
           attach={"shadow-camera"}
         />
       </directionalLight>
-        <Physics gravity={[0, -9.81, 0]}>
-          <Map scale={5} position={[-6, -10, 0]} model={"/models/ground.glb"} />
-          {characters.map((data) => (
-            <CharacterController
-              key={data.id}
-              position={data.position}
-              host={data.host}
-              remoteAnimation={data.animation}
-              id={data.id}
-              color={data.color}
-            />
-          ))}
-        </Physics>
+      <Physics gravity={[0, -9.81, 0]}>
+        <Map scale={5} position={[-6, -10, 0]} model={"/models/ground.glb"} />
+        {characters.map((data) => (
+          <CharacterController
+            key={data.id}
+            position={data.position}
+            host={data.host}
+            remoteAnimation={data.animation}
+            id={data.id}
+            color={data.color}
+            myVideo={myVideo}
+            remoteVideo={remoteVideo}
+          />
+        ))}
+      </Physics>
     </>
   );
 };

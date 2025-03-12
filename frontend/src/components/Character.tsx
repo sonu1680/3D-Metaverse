@@ -3,7 +3,7 @@ import { useGraph } from "@react-three/fiber";
 import React, { useEffect, useMemo, useRef } from "react";
 import { SkeletonUtils } from "three-stdlib";
 
-export function Character({ animation,color, ...props }) {
+export function Character({ animation, color, ...props }) {
   const group = useRef();
   const { scene, materials, animations } = useGLTF("/models/character.glb");
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
@@ -28,8 +28,7 @@ export function Character({ animation,color, ...props }) {
             castShadow
             receiveShadow
           >
-<meshStandardMaterial color={color} ></meshStandardMaterial>
-
+            <meshStandardMaterial color={color}></meshStandardMaterial>
           </skinnedMesh>
           <skinnedMesh
             name="eye"
