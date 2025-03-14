@@ -15,7 +15,7 @@ const io = new Server(server, {
 });
 
 const characters = {};
-
+const chat=[]
 io.on("connection", (socket) => {
 
    //logic for multiplayer game
@@ -28,7 +28,8 @@ io.on("connection", (socket) => {
           const roomId = data.roomId;
           socket.join(roomId);
           socket.roomId = roomId;
-  
+            io.to(roomId).emit('chatHistory',JSON.stringify(chat))
+          
           if (!characters[roomId]) {
             characters[roomId] = [];
           }
@@ -79,7 +80,6 @@ io.on("connection", (socket) => {
     });
   //logic for videocall
   socket.on("videoCall", (msg) => {
-    console.log('videcall',msg)
 
     const data = JSON.parse(msg);
     switch (data.type) {
@@ -100,14 +100,23 @@ io.on("connection", (socket) => {
             socket.to(data.room).emit("videoCall", msg);
             break;
          case 'endCall':
-          console.log(data)
           socket.to(data.room).emit("videoCall",msg)   
 
     }
   });
 
+
+  socket.on('chat',(msg)=>{
+    const data=JSON.parse(msg)
+    chat.push(data.msg)
+  //  store chat to database
+
+  // emit msg to other user
+  socket.to(data.room).emit('chat',msg)
+
+
+  })
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
     const roomId = socket.roomId;
     const roomChar = characters[roomId];
     if (!roomChar) return;
@@ -133,5 +142,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(3001, () => {
-  console.log("Server is running on port 3001");
+   console.log("Server is running on port 3001");
 });

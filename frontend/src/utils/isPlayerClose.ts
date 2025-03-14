@@ -1,7 +1,7 @@
 export const isPlayerClose = (
   myPos: number[],
   otherPos: number[],
-  threshold: number = 8
+  threshold: number = 5
 ) => {
   const [myX, , myZ] = myPos;
   const [otherX, , otherZ] = otherPos;

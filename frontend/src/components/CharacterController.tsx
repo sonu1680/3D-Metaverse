@@ -1,4 +1,4 @@
-import { Box, Plane, useKeyboardControls } from "@react-three/drei";
+import { Billboard, Box, Plane, Text, useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
@@ -52,7 +52,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const [myPosition, setMyPosition] = useRecoilState(myPostiotionAtom);
   const { videoUser, addUserToVideoList, removeUserFromVideoList } =
     useUserVideoList();
-
+const textRef=useRef<any>()
   const emitInterval = useRef<NodeJS.Timeout | null>(null);
   const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
   const emitPosition = () => {
@@ -89,6 +89,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
     }
   };
   useFrame(({ camera }) => {
+     
     if (rb.current) {
       const controls = get();
       const vel = rb.current.linvel();
@@ -198,12 +199,18 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       }
 
       if (cameraTarget.current) {
+
         cameraTarget.current.getWorldPosition(
           cameraLookAtWorldPosition.current
         );
         cameraLookAt.current.lerp(cameraLookAtWorldPosition.current, 0.1);
         camera.lookAt(cameraLookAt.current);
+        // Make the text always face the camera
+         if (textRef.current) {
+           textRef.current.lookAt(camera.position); 
+         }
       }
+     
     }
   });
 
@@ -225,6 +232,18 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
         <group ref={cameraTarget} position-z={12} />
         <group ref={cameraPosition} position-y={10} position-z={-17} />
         <group ref={character}>
+          <Billboard>
+            <Text
+              position={[0, 2, 0]}
+              fontSize={0.4}
+              ref={textRef}
+              color="white"
+              anchorX="center"
+              anchorY="middle"
+            >
+              {id}
+            </Text>
+          </Billboard>
           <Character
             scale={1}
             position-y={-1.3}
@@ -232,7 +251,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
             color={color}
           />
           {videoUser.includes(id) && (
-            <Plane position-y={6} args={[6, 3, 3]}>
+            <Plane position-y={6} args={[4, 3, 3]}>
               <Suspense fallback={<meshStandardMaterial color={"red"} />}>
                 <VideoMaterial src={remoteVideo} />
               </Suspense>
@@ -241,7 +260,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
         </group>
         {/* activate video call for me*/}
         {user === id && playerClose && (
-          <Plane position-y={3} args={[6, 3, 3]}>
+          <Plane position-y={3} args={[4, 3, 3]}>
             <Suspense fallback={<meshStandardMaterial color={"red"} />}>
               <VideoMaterial src={myVideo} />
             </Suspense>

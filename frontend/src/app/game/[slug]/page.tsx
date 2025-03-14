@@ -1,4 +1,5 @@
 "use client";
+import Chat from "@/components/Chat";
 import { Experience } from "@/components/Experience";
 import useCall from "@/hooks/useCall";
 import useSocket from "@/hooks/useSocket";
@@ -22,11 +23,9 @@ const Page = ({params}:any) => {
   const player = useRecoilValue(isPlayerCloseAtom);
   useMemo(() => {
     if (player) {
-      console.log("close");
-        callFun(); 
+        // callFun(); 
     } else {
-      console.log("not close");
-        endCall();
+        // endCall();
         socket.emit("videoCall",JSON.stringify({type:'endCall',room:'123'}))
     }
   }, [player]); 
@@ -39,9 +38,10 @@ const Page = ({params}:any) => {
     }
   }, [characters, setCharacter]);
   return (
+    <>
     <div
       style={{
-        width: "100vw",
+        width: "80vw",
         height: "100vh",
         position: "absolute",
         top: 0,
@@ -56,6 +56,19 @@ const Page = ({params}:any) => {
         </KeyboardControls>
       </Suspense>
     </div>
+
+
+        <div
+      style={{
+        width: "20vw",
+        height: "100vh",
+        position: "absolute",
+       left: "80vw",
+      }}
+    >
+<Chat/>
+    </div>
+    </>
   );
 };
 

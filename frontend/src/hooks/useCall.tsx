@@ -2,7 +2,6 @@ import { socket } from "@/lib/socket";
 import React, { useEffect, useRef, useState } from "react";
 import { useSetRecoilState } from "recoil";
 const useCall = () => {
-  console.log("sonu error use call ")
   const me = useRef<RTCPeerConnection|null>(null);
   const room = "123";
     const [myVideo, setMyVideo] = useState<MediaStream | null>(null);
@@ -31,8 +30,8 @@ const useCall = () => {
       const data = JSON.parse(msg);
       switch (data.type) {
         case "createOffer":
-          console.log("inside createOffer");
-          //after getting offer setting the offer in local and acreating answer
+
+        //after getting offer setting the offer in local and acreating answer
           await me.current.setRemoteDescription(data.sdp);
           await startStream();
           const answer = await me.current.createAnswer();
@@ -50,7 +49,6 @@ const useCall = () => {
           break;
 
         case "answerOffer":
-          console.log("inside answer offer", me, data);
           await me.current.setRemoteDescription(data.sdp);
 
           break;
@@ -61,11 +59,11 @@ const useCall = () => {
           }
           break;
           case 'endCall':
-            console.log('call ended remote')
-            endCall();
+            await endCall();
             break;
         default:
-          console.log("error rtc")  
+           null;
+          break;
       }
     });
  const cleanupRTC = () => {
@@ -79,9 +77,7 @@ const useCall = () => {
  const cleanupSocket = () => {
    if (socket) {
      socket.off("videoCall"); 
-     if (socket.connected) {
-       socket.disconnect(); 
-     }
+   
    }
  };
      return () => {
@@ -123,19 +119,13 @@ const useCall = () => {
         .getTracks()
         .forEach((track) => me.current!.addTrack(track, stream));
 
-      // if (myVideo.current) {
-      //   myVideo.current = stream;
-      //   myVideo.current.play();
-
-        
-      // }
+    
     } catch (error) {
-      console.error("Error accessing media devices:", error);
+      // console.error("Error accessing media devices:", error);
     }
   };
 
   const callFun = async () => {
-    console.log("click function");
     me.current = new RTCPeerConnection();
     setupConnectionEvents(me.current);
     await startStream();
@@ -152,16 +142,29 @@ const useCall = () => {
     );
   };
 
-  const endCall=async()=>{
-    
-    if(me.current){
-      me.current.close()
-      me.current=null
-      console.log("call ended current");
-
-
-    }
+const endCall = async () => {
+  if (me.current) {
+    me.current.close();
+    me.current = null;
   }
+
+  if (myVideo) {
+    myVideo.getTracks().forEach((track) => {
+      track.stop(); 
+    });
+    setMyVideo(null); 
+  }
+
+  if (remoteVideo) {
+    remoteVideo.getTracks().forEach((track) => {
+      track.stop(); 
+    });
+    setRemoteVideo(null); 
+  }
+
+
+};
+
   return { callFun, remoteVideo, myVideo, endCall };
 };
 
