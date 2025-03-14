@@ -3,6 +3,8 @@ import express from "express";
 import http from "http";
 import { generateRandomPosition } from "./utils/generatePosition.js";
 import { generateRandomColor } from "./utils/generateColor.js";
+import { addChat, getChats } from "./database.js";
+
 
 const app = express();
 const server = http.createServer(app);
@@ -15,7 +17,6 @@ const io = new Server(server, {
 });
 
 const characters = {};
-const chat=[]
 io.on("connection", (socket) => {
 
    //logic for multiplayer game
@@ -28,12 +29,12 @@ io.on("connection", (socket) => {
           const roomId = data.roomId;
           socket.join(roomId);
           socket.roomId = roomId;
-            io.to(roomId).emit('chatHistory',JSON.stringify(chat))
+
           
           if (!characters[roomId]) {
             characters[roomId] = [];
           }
-  
+          
           const newCharacter = {
             id: socket.id,
             position: generateRandomPosition(),
@@ -41,10 +42,10 @@ io.on("connection", (socket) => {
             color: generateRandomColor(),
             roomId: roomId,
           };
-  
+          
           characters[roomId].push(newCharacter);
           const roomCharacter = characters[roomId];
-  
+          
           io.to(roomId).emit(
             "gameData",
             JSON.stringify({
@@ -53,6 +54,9 @@ io.on("connection", (socket) => {
               type: "isRoomJoined",
             })
           );
+          getChats(roomId).then((data)=>{
+            io.to(roomId).emit('chatHistory',JSON.stringify(data))
+          })
           break;
         ///on
         case "CharacterMove":
@@ -85,7 +89,6 @@ io.on("connection", (socket) => {
     switch (data.type) {
       case "register":
         socket.join(data.room);
-
         break;
       case "createOffer":
         socket.to(data.room).emit("videoCall", msg);
@@ -106,13 +109,13 @@ io.on("connection", (socket) => {
   });
 
 
-  socket.on('chat',(msg)=>{
+  socket.on('chat',async(msg)=>{
     const data=JSON.parse(msg)
-    chat.push(data.msg)
-  //  store chat to database
+    // emit msg to other user
+    socket.to(data.room).emit('chat',msg)
+    //  store chat to database
+    await addChat(data);
 
-  // emit msg to other user
-  socket.to(data.room).emit('chat',msg)
 
 
   })
