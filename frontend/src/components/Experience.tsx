@@ -39,18 +39,20 @@ export const Experience = ({ myVideo, remoteVideo }: any | null) => {
           attach={"shadow-camera"}
         />
       </directionalLight>
-      <Physics gravity={[0, -9.81, 0]}>
+      <Physics  gravity={[0, -9.81, 0]}>
         <Map scale={5} position={[-6, -10, 0]} model={"/models/ground.glb"} />
         {characters.map((data) => (
+          
           <CharacterController
             key={data.id}
             position={data.position}
             host={data.host}
+            rotation={data.rotation}
             remoteAnimation={data.animation}
             id={data.id}
             color={data.color}
-            myVideo={myVideo}
-            remoteVideo={remoteVideo}
+            // myVideo={myVideo}
+            // remoteVideo={remoteVideo}
           />
         ))}
       </Physics>

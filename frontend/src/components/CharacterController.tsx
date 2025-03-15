@@ -1,4 +1,10 @@
-import { Billboard, Box, Plane, Text, useKeyboardControls } from "@react-three/drei";
+import {
+  Billboard,
+  Box,
+  Plane,
+  Text,
+  useKeyboardControls,
+} from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
@@ -17,22 +23,26 @@ import { roomAtom } from "@/recoil/roomId";
 import { isPlayerCloseAtom, myPostiotionAtom } from "@/recoil/myPositon";
 import { isPlayerClose } from "@/utils/isPlayerClose";
 import useUserVideoList from "@/hooks/useUserVideoList";
-import { round2 } from "@/utils/round2";
 import { socket } from "@/lib/socket";
 import { VideoMaterial } from "./videoMaterial";
+import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
+import { MemoizedVideoBillboard } from "./Billboard";
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
   id,
   color,
   remoteAnimation,
-  myVideo,
-  remoteVideo,
+  rotation,
+  // myVideo,
+  // remoteVideo,
 }) => {
-  const roomId = useRecoilValue(roomAtom);
-  const WALK_SPEED = 4;
-  const RUN_SPEED = 8;
-  const ROTATION_SPEED = degToRad(1);
+  const myVideo = useRecoilValue(myVideoState);
+  const remoteVideo = useRecoilValue(remoteVideoState);
 
+  const roomId = useRecoilValue(roomAtom);
+  const WALK_SPEED = 6;
+  const RUN_SPEED = 6;
+  const ROTATION_SPEED = degToRad(1);
   const rb = useRef<RapierRigidBody>(null);
   const container = useRef<Group>(null);
   const character = useRef<Group>(null);
@@ -52,23 +62,20 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const [myPosition, setMyPosition] = useRecoilState(myPostiotionAtom);
   const { videoUser, addUserToVideoList, removeUserFromVideoList } =
     useUserVideoList();
-const textRef=useRef<any>()
+  const textRef = useRef<any>();
   const emitInterval = useRef<NodeJS.Timeout | null>(null);
   const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
   const emitPosition = () => {
     if (rb.current) {
       const pos = rb.current.translation();
-      const fixedPos: [number, number, number] = [
-        round2(pos.x),
-        round2(pos.y),
-        round2(pos.z),
-      ];
+      const fixedPos: [number, number, number] = [pos.x, pos.y, pos.z];
       socket.emit(
         "gameData",
         JSON.stringify({
           position: fixedPos,
           animation: remoteAnimation,
           roomId: roomId,
+          rotation: [container.current?.rotation.y, rotationTarget.current],
           type: "CharacterMove",
         })
       );
@@ -78,7 +85,7 @@ const textRef=useRef<any>()
   const startEmittingPosition = () => {
     if (!emitInterval.current) {
       emitPosition();
-      emitInterval.current = setInterval(emitPosition, 1000);
+      emitInterval.current = setInterval(emitPosition, 150);
     }
   };
 
@@ -89,14 +96,13 @@ const textRef=useRef<any>()
     }
   };
   useFrame(({ camera }) => {
-     
     if (rb.current) {
       const controls = get();
       const vel = rb.current.linvel();
       const movement = { x: 0, y: 0, z: 0 };
 
       if (user === id) {
-        // console.log('me',id,position)
+        // --- Local player logic remains unchanged ---
         setMyPosition(position);
 
         if (controls.forward) movement.z = 1;
@@ -119,7 +125,6 @@ const textRef=useRef<any>()
           vel.x =
             Math.sin(rotationTarget.current + characterRotationTarget.current) *
             speed;
-
           vel.z =
             Math.cos(rotationTarget.current + characterRotationTarget.current) *
             speed;
@@ -137,7 +142,33 @@ const textRef=useRef<any>()
         }
 
         rb.current.setLinvel(vel, true);
+
+        // --- Camera and container logic ---
+        if (container.current) {
+          const a = (container.current.rotation.y = MathUtils.lerp(
+            container.current.rotation.y,
+            rotationTarget.current,
+            0.1
+          ));
+        }
+
+        if (cameraPosition.current) {
+          cameraPosition.current.getWorldPosition(cameraWorldPosition.current);
+          camera.position.lerp(cameraWorldPosition.current, 0.1);
+        }
+
+        if (cameraTarget.current) {
+          cameraTarget.current.getWorldPosition(
+            cameraLookAtWorldPosition.current
+          );
+          cameraLookAt.current.lerp(cameraLookAtWorldPosition.current, 0.1);
+          camera.lookAt(cameraLookAt.current);
+          if (textRef.current) {
+            textRef.current.lookAt(camera.position);
+          }
+        }
       } else {
+        // --- Remote player logic ---
         //logic for video find diffrence of myPosition and other player
 
         if (myPosition && position) {
@@ -155,66 +186,58 @@ const textRef=useRef<any>()
           }
         }
 
-        targetPosition.current.set(
-          round2(position[0]),
-          round2(position[1]),
-          round2(position[2])
-        );
-
+        // Update target position from remote data
+        targetPosition.current.set(position[0], position[1], position[2]);
+        // Get current position from the rigid body
         const currentTranslation = rb.current.translation();
         currentPosition.current.set(
-          round2(currentTranslation.x),
-          round2(currentTranslation.y),
-          round2(currentTranslation.z)
+          currentTranslation.x,
+          currentTranslation.y,
+          currentTranslation.z
         );
 
-        currentPosition.current.lerp(targetPosition.current, 0.001);
-        currentPosition.current.set(
-          round2(currentPosition.current.x),
-          round2(currentPosition.current.y),
-          round2(currentPosition.current.z)
+        // Compute the distance between current and target positions
+        const distance = currentPosition.current.distanceTo(
+          targetPosition.current
         );
-        rb.current.setTranslation(currentPosition.current, true);
+        if (distance > 0.1) {
 
-        const distance = round2(
-          currentPosition.current.distanceTo(targetPosition.current)
-        );
+          const direction = currentPosition.current
+            .clone()
+            .sub(targetPosition.current)
+            .normalize()
+            .multiplyScalar(0.036);
+             rb.current.setTranslation(
+            currentPosition.current.sub(direction),
+            false
+          );
+          //  rotation for remote player
+          characterRotationTarget.current = Math.atan2(
+            targetPosition.current.x - currentTranslation.x,
+            targetPosition.current.z - currentTranslation.z
+          );
 
-        setAnimation(distance > 1 ? "walk" : "idle");
+          if (character.current) {
+            character.current.rotation.y = lerpAngle(
+              character.current.rotation.y,
+              characterRotationTarget.current,
+              0.1
+            );
+          }
+                  setAnimation("run");
+
+        } else {
+          setAnimation("idle");
+        }
       }
-    }
-
-    if (user === id) {
-      if (container.current) {
-        container.current.rotation.y = MathUtils.lerp(
-          container.current.rotation.y,
-          rotationTarget.current,
-          0.1
-        );
-      }
-
-      if (cameraPosition.current) {
-        cameraPosition.current.getWorldPosition(cameraWorldPosition.current);
-        camera.position.lerp(cameraWorldPosition.current, 0.1);
-      }
-
-      if (cameraTarget.current) {
-
-        cameraTarget.current.getWorldPosition(
-          cameraLookAtWorldPosition.current
-        );
-        cameraLookAt.current.lerp(cameraLookAtWorldPosition.current, 0.1);
-        camera.lookAt(cameraLookAt.current);
-        // Make the text always face the camera
-         if (textRef.current) {
-           textRef.current.lookAt(camera.position); 
-         }
-      }
-     
     }
   });
 
   useEffect(() => {
+    rb.current?.setTranslation(
+      new Vector3(position[0], position[1], position[2]),
+      false
+    );
     return () => {
       stopEmittingPosition();
     };
@@ -226,46 +249,59 @@ const textRef=useRef<any>()
       colliders={false}
       lockRotations
       type={user === id ? "dynamic" : "kinematicPosition"}
-      position={position}
     >
+      <Billboard ref={textRef}>
+        <Text
+          position={[0, 1.5, 0]}
+          fontSize={0.25}
+          color="white"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {id}
+        </Text>
+      </Billboard>
+      {videoUser.includes(id) && (
+        // <Billboard ref={textRef}>
+        //   <Plane position-y={6} args={[4, 3, 3]}>
+        //     <Suspense fallback={<meshStandardMaterial wireframe />}>
+        //       <VideoMaterial src={remoteVideo} />
+        //     </Suspense>
+        //   </Plane>
+        // </Billboard>
+        <MemoizedVideoBillboard
+          videoSrc={remoteVideo}
+          ref={textRef}
+          args={[4, 3, 3]}
+        />
+      )}
+      {/* activate video call for me*/}
+      {user === id && playerClose && (
+        // <Billboard ref={textRef}>
+        //   <Plane position-y={3} args={[4, 3, 3]}>
+        //     <Suspense fallback={<meshStandardMaterial wireframe />}>
+        //       <VideoMaterial src={myVideo} />
+        //     </Suspense>
+        //   </Plane>
+        // </Billboard>
+        <MemoizedVideoBillboard
+          videoSrc={myVideo}
+          ref={textRef}
+          args={[4, 3, 3]}
+        />
+      )}
+
       <group ref={container}>
         <group ref={cameraTarget} position-z={12} />
         <group ref={cameraPosition} position-y={10} position-z={-17} />
         <group ref={character}>
-          <Billboard>
-            <Text
-              position={[0, 2, 0]}
-              fontSize={0.4}
-              ref={textRef}
-              color="white"
-              anchorX="center"
-              anchorY="middle"
-            >
-              {id}
-            </Text>
-          </Billboard>
           <Character
             scale={1}
             position-y={-1.3}
             animation={animation}
             color={color}
           />
-          {videoUser.includes(id) && (
-            <Plane position-y={6} args={[4, 3, 3]}>
-              <Suspense fallback={<meshStandardMaterial color={"red"} />}>
-                <VideoMaterial src={remoteVideo} />
-              </Suspense>
-            </Plane>
-          )}
         </group>
-        {/* activate video call for me*/}
-        {user === id && playerClose && (
-          <Plane position-y={3} args={[4, 3, 3]}>
-            <Suspense fallback={<meshStandardMaterial color={"red"} />}>
-              <VideoMaterial src={myVideo} />
-            </Suspense>
-          </Plane>
-        )}
       </group>
       <CapsuleCollider args={[0.3, 1]} />
     </RigidBody>

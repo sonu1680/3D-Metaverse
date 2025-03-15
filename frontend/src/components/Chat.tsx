@@ -82,7 +82,7 @@ const Chat = () => {
       {/* Message area - prevent horizontal scrolling */}
       <div className="flex-1 p-1 overflow-y-auto overflow-x-hidden bg-gray-100">
         <div className="space-y-1">
-          {messages.length > 0 ? (
+          {messages && messages.length > 0 ? (
             messages.map((message, index) => {
               const isOwnMessage = message.sender === socket.id;
               return (

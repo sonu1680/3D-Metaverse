@@ -4,4 +4,5 @@ id:string;
   host:boolean;
   animation:string;
   color:string
+  rotation:any
 }

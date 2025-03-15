@@ -18,22 +18,14 @@ const setChatMessages = useSetRecoilState<chatTypes[]>(chatAtom);
       socket.connect();
 
       socket.on("connect", () => {
-        socket.emit(
-          "videoCall",
-          JSON.stringify({
-            type: "register",
-            peerid: socket.id,
-            room: "123",
-            issue: "usesocket",
-          })
-        );
+          socket.emit(
+            "gameData",
+            JSON.stringify({ type: "joinGame", roomId: roomId })
+          );
       });
     }
 
-    socket.emit(
-      "gameData",
-      JSON.stringify({ type: "joinGame", roomId: roomId })
-    );
+  
 
     socket.on("gameData", (msg) => {
       const data = JSON.parse(msg);
@@ -47,11 +39,11 @@ const setChatMessages = useSetRecoilState<chatTypes[]>(chatAtom);
     });
       socket.on("chatHistory", (msg: string) => {
           const data = JSON.parse(msg);
-          console.log('chathistory',data);
                 setChatMessages(data);
 
         });
     return () => {
+      socket.off("chatHistory");
       socket.disconnect();
     };
   }, [roomId, socket]);

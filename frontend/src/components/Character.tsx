@@ -11,7 +11,7 @@ export function Character({ animation, color, ...props }) {
 
   const { actions } = useAnimations(animations, group);
 
-  useEffect(() => {
+  useEffect(()=>{
     actions[animation]?.reset().fadeIn(0.24).play();
     return () => actions?.[animation]?.fadeOut(0.24);
   }, [animation]);

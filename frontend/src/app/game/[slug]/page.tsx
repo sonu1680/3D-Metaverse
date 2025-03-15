@@ -23,9 +23,12 @@ const Page = ({params}:any) => {
   const player = useRecoilValue(isPlayerCloseAtom);
   useMemo(() => {
     if (player) {
-        // callFun(); 
+          // callFun(); 
+         console.log('call')
     } else {
-        // endCall();
+        //  endCall();
+                 console.log("end call");
+
         socket.emit("videoCall",JSON.stringify({type:'endCall',room:'123'}))
     }
   }, [player]); 
