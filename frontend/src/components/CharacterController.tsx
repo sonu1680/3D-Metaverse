@@ -11,7 +11,7 @@ import {
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import { Suspense, useEffect, useRef, useState } from "react";
+import {  useEffect, useRef, useState } from "react";
 import { MathUtils, Vector3, Group } from "three";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { degToRad } from "three/src/math/MathUtils.js";
@@ -24,21 +24,18 @@ import { isPlayerCloseAtom, myPostiotionAtom } from "@/recoil/myPositon";
 import { isPlayerClose } from "@/utils/isPlayerClose";
 import useUserVideoList from "@/hooks/useUserVideoList";
 import { socket } from "@/lib/socket";
-import { VideoMaterial } from "./videoMaterial";
 import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
 import { MemoizedVideoBillboard } from "./Billboard";
+import { CharacterNameOnHead } from "./CharacterNameOnHead";
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
   id,
   color,
   remoteAnimation,
-  rotation,
-  // myVideo,
-  // remoteVideo,
+ 
 }) => {
-  const myVideo = useRecoilValue(myVideoState);
+   const myVideo = useRecoilValue(myVideoState);
   const remoteVideo = useRecoilValue(remoteVideoState);
-
   const roomId = useRecoilValue(roomAtom);
   const WALK_SPEED = 6;
   const RUN_SPEED = 6;
@@ -175,12 +172,20 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
           const playerIsClose: Boolean = isPlayerClose(myPosition, position);
           if (playerIsClose) {
             if (!videoUser.includes(id)) {
+            socket.emit('videoCall',JSON.stringify({type:'initiator',me:user,remote:id}))
               setPlayerClose(true);
               addUserToVideoList(id);
             }
           } else {
             if (videoUser.includes(id)) {
               removeUserFromVideoList(id);
+                          socket.emit(
+                            "videoCall",
+                            JSON.stringify({
+                              type: "endCall",
+                            })
+                          );
+
               setPlayerClose(false);
             }
           }
@@ -243,6 +248,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
     };
   }, []);
 
+
   return (
     <RigidBody
       ref={rb}
@@ -250,43 +256,20 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       lockRotations
       type={user === id ? "dynamic" : "kinematicPosition"}
     >
-      <Billboard ref={textRef}>
-        <Text
-          position={[0, 1.5, 0]}
-          fontSize={0.25}
-          color="white"
-          anchorX="center"
-          anchorY="middle"
-        >
-          {id}
-        </Text>
-      </Billboard>
+     
+      <CharacterNameOnHead id={id} />
       {videoUser.includes(id) && (
-        // <Billboard ref={textRef}>
-        //   <Plane position-y={6} args={[4, 3, 3]}>
-        //     <Suspense fallback={<meshStandardMaterial wireframe />}>
-        //       <VideoMaterial src={remoteVideo} />
-        //     </Suspense>
-        //   </Plane>
-        // </Billboard>
         <MemoizedVideoBillboard
           videoSrc={remoteVideo}
-          ref={textRef}
+          refs={textRef}
           args={[4, 3, 3]}
         />
       )}
       {/* activate video call for me*/}
       {user === id && playerClose && (
-        // <Billboard ref={textRef}>
-        //   <Plane position-y={3} args={[4, 3, 3]}>
-        //     <Suspense fallback={<meshStandardMaterial wireframe />}>
-        //       <VideoMaterial src={myVideo} />
-        //     </Suspense>
-        //   </Plane>
-        // </Billboard>
         <MemoizedVideoBillboard
           videoSrc={myVideo}
-          ref={textRef}
+          refs={textRef}
           args={[4, 3, 3]}
         />
       )}

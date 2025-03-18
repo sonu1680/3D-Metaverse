@@ -1,92 +1,15 @@
 import { socket } from "@/lib/socket";
 import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRecoilState, useSetRecoilState } from "recoil";
 const useCall = () => {
   const me = useRef<RTCPeerConnection | null>(null);
-  const room = "123";
+  // const room = "123";
   // const [myVideo, setMyVideo] = useState<MediaStream | null>(null);
   // const [remoteVideo, setRemoteVideo] = useState<MediaStream | null>(null);
   const [myVideo, setMyVideo] = useRecoilState(myVideoState);
   const [remoteVideo, setRemoteVideo] = useRecoilState(remoteVideoState);
-
-  useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-      socket.on("connect", () => {
-        socket.emit(
-          "videoCall",
-          JSON.stringify({
-            type: "register",
-            room: room,
-          })
-        );
-      });
-    }
-
-    socket.on("videoCall", async (msg) => {
-      if (!me.current) {
-        me.current = new RTCPeerConnection();
-        setupConnectionEvents(me.current);
-      }
-
-      const data = JSON.parse(msg);
-      switch (data.type) {
-        case "createOffer":
-          //after getting offer setting the offer in local and acreating answer
-          await me.current.setRemoteDescription(data.sdp);
-          await startStream();
-          const answer = await me.current.createAnswer();
-          await me.current.setLocalDescription(answer);
-
-          socket.emit(
-            "videoCall",
-            JSON.stringify({
-              type: "answerOffer",
-              sdp: me.current.localDescription,
-              room: room,
-            })
-          );
-
-          break;
-
-        case "answerOffer":
-          await me.current.setRemoteDescription(data.sdp);
-
-          break;
-
-        case "iceCandidate":
-          if (me.current) {
-            await me.current.addIceCandidate(data.candidate);
-          }
-          break;
-        case "endCall":
-          await endCall();
-          break;
-        default:
-          null;
-          break;
-      }
-    });
-    const cleanupRTC = () => {
-      if (me.current) {
-        me.current.close();
-        me.current = null;
-      }
-    };
-
-    //clean up function
-    const cleanupSocket = () => {
-      if (socket) {
-        socket.off("videoCall");
-      }
-    };
-    return () => {
-      cleanupRTC();
-      cleanupSocket();
-    };
-  }, []);
-
+  const callRef = useRef<any>(null);
   const setupConnectionEvents = (peer: RTCPeerConnection) => {
     peer.onicecandidate = (event) => {
       if (event.candidate) {
@@ -95,7 +18,7 @@ const useCall = () => {
           JSON.stringify({
             type: "iceCandidate",
             candidate: event.candidate,
-            room,
+            room: callRef.current.roomId,
           })
         );
       }
@@ -113,7 +36,6 @@ const useCall = () => {
         audio: true,
       });
       setMyVideo(stream);
-      console.log("stream");
       if (!me.current) return;
 
       stream
@@ -136,7 +58,7 @@ const useCall = () => {
       JSON.stringify({
         type: "createOffer",
         sdp: me.current.localDescription,
-        room: room,
+        room: callRef.current.roomId,
       })
     );
   };
@@ -146,7 +68,7 @@ const useCall = () => {
       me.current.close();
       me.current = null;
     }
-
+    callRef.current = null;
     if (myVideo) {
       myVideo.getTracks().forEach((track) => {
         track.stop();
@@ -161,6 +83,98 @@ const useCall = () => {
       setRemoteVideo(null);
     }
   };
+
+  useEffect(() => {
+    if (!socket.connected) {
+      socket.connect();
+      socket.on("connect", () => {});
+    }
+
+    socket.on("videoCall", async (msg) => {
+      if (!me.current) {
+        me.current = new RTCPeerConnection();
+        setupConnectionEvents(me.current);
+      }
+
+      const data = JSON.parse(msg);
+      switch (data.type) {
+        case "callData":
+          if (callRef.current === null) {
+            callRef.current = data;
+            socket.emit(
+              "videoCall",
+              JSON.stringify({
+                type: "register",
+                room: callRef.current.roomId,
+              })
+            );
+          }
+
+          break;
+        case "createOffer":
+          //after getting offer setting the offer in local and acreating answer
+          await me.current.setRemoteDescription(data.sdp);
+          await startStream();
+          const answer = await me.current.createAnswer();
+          await me.current.setLocalDescription(answer);
+
+          socket.emit(
+            "videoCall",
+            JSON.stringify({
+              type: "answerOffer",
+              sdp: me.current.localDescription,
+              room: callRef.current.roomId,
+            })
+          );
+
+          break;
+
+        case "answerOffer":
+          await me.current.setRemoteDescription(data.sdp);
+
+          break;
+
+        case "iceCandidate":
+          if (me.current) {
+            await me.current.addIceCandidate(data.candidate);
+          }
+          break;
+        case "endCall":
+          endCall();
+          break;
+        default:
+          null;
+          break;
+      }
+    });
+    const cleanupRTC = () => {
+      if (me.current) {
+        me.current.close();
+        me.current = null;
+        endCall();
+      }
+    };
+
+    //clean up function
+    const cleanupSocket = () => {
+      if (socket) {
+        socket.off("videoCall");
+      }
+    };
+    return () => {
+      cleanupRTC();
+      cleanupSocket();
+    };
+  }, []);
+
+  ///call the receiver
+  useEffect(() => {
+    if (callRef.current) {
+      if (callRef.current.receiver === socket.id) {
+        callFun();
+      } 
+    }
+  }, [callRef.current]);
 
   return { callFun, remoteVideo, myVideo, endCall };
 };

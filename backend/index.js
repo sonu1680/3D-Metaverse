@@ -4,6 +4,7 @@ import http from "http";
 import { generateRandomPosition } from "./utils/generatePosition.js";
 import { generateRandomColor } from "./utils/generateColor.js";
 import { addChat, getChats } from "./database.js";
+import { v4 as uuidv4 } from "uuid";
 
 
 const app = express();
@@ -15,7 +16,6 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
   },
 });
-
 const characters = {};
 io.on("connection", (socket) => {
 
@@ -57,6 +57,7 @@ io.on("connection", (socket) => {
           getChats(roomId).then((data)=>{
             io.to(roomId).emit('chatHistory',JSON.stringify(data))
           })
+
           break;
         ///on
         case "CharacterMove":
@@ -87,6 +88,17 @@ io.on("connection", (socket) => {
 
     const data = JSON.parse(msg);
     switch (data.type) {
+      case "initiator":
+        const {me,remote}=data;
+        const newData = {
+          type: "callData",
+          caller: me,
+          receiver: remote,
+          roomId: uuidv4(),
+        };
+                io.to(me).emit("videoCall", JSON.stringify(newData));
+                io.to(remote).emit("videoCall", JSON.stringify(newData));
+break;
       case "register":
         socket.join(data.room);
         break;
@@ -96,15 +108,12 @@ io.on("connection", (socket) => {
       case "answerOffer":
         socket.to(data.room).emit("videoCall", msg);
         break;
-      case "answerOfferOne":
+
+      case "iceCandidate":
         socket.to(data.room).emit("videoCall", msg);
         break;
-        case 'iceCandidate':
-            socket.to(data.room).emit("videoCall", msg);
-            break;
-         case 'endCall':
-          socket.to(data.room).emit("videoCall",msg)   
-
+      case "endCall":
+        io.to(data.room).emit("videoCall", msg);
     }
   });
 

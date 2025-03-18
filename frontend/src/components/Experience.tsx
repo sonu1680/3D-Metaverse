@@ -4,7 +4,7 @@ import {
   OrbitControls,
   OrthographicCamera,
 } from "@react-three/drei";
-import { Suspense, useEffect, useRef } from "react";
+import { useRef } from "react";
 import { CharacterController } from "./CharacterController";
 import { Map } from "./Map";
 import { useRecoilValue } from "recoil";
@@ -14,7 +14,7 @@ import { Physics } from "@react-three/rapier";
 import { characterAtom } from "@/recoil/char";
 
 
-export const Experience = ({ myVideo, remoteVideo }: any | null) => {
+export const Experience = () => {
   const shadowCameraRef = useRef<OrthographicCameraType | null>(null);
   const characters = useRecoilValue<RemoteCharacter[]>(characterAtom);
 
@@ -51,11 +51,11 @@ export const Experience = ({ myVideo, remoteVideo }: any | null) => {
             remoteAnimation={data.animation}
             id={data.id}
             color={data.color}
-            // myVideo={myVideo}
-            // remoteVideo={remoteVideo}
+         
           />
         ))}
       </Physics>
     </>
-  );
-};
+  )
+}
+;

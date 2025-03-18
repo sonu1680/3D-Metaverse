@@ -4,7 +4,7 @@ export interface CharacterControllerProps {
   id: string; // Unique player ID
   color: string; // Character color
   remoteAnimation?: string; // Animation state received from the server
-  myVideo?: MediaStream;
+  myVideo?: any;
   remoteVideo?: MediaStream;
   rotation: any
 }
