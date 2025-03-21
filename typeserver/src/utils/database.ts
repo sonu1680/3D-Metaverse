@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
-export const addChat = async (data) => {
+export const addChat = async (data:any) => {
   try {
     const chatPreset = await prisma.chatArray.findFirst({
       where: {
@@ -47,7 +47,7 @@ export const addChat = async (data) => {
   }
 };
 
-export const getChats = async (roomId) => {
+export const getChats = async (roomId:any) => {
   try {
     const chats = await prisma.chat.findMany({
       where: {

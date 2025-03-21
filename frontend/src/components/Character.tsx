@@ -1,9 +1,25 @@
-import { useAnimations, useGLTF } from "@react-three/drei";
+import { Html, useAnimations, useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import React, { useEffect, useMemo, useRef } from "react";
 import { SkeletonUtils } from "three-stdlib";
 
-export function Character({ animation, color, ...props }) {
+export const Overlay = (id) => {
+const videoRef = useRef<HTMLVideoElement>(null); // Reference to the video element
+
+useEffect(() => {
+  if (videoRef.current) {
+    videoRef.current.src = "/sonu.mp4"; 
+    videoRef.current.play(); 
+  }
+}, []);
+  return (
+    <Html>
+      <div className="w-20 h-10 bg-red-400">{id}</div>
+    </Html>
+  );
+};
+
+export function Character({ animation, color,id ,...props }) {
   const group = useRef();
   const { scene, materials, animations } = useGLTF("/models/character.glb");
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
@@ -29,6 +45,10 @@ export function Character({ animation, color, ...props }) {
             receiveShadow
           >
             <meshStandardMaterial color={color}></meshStandardMaterial>
+
+
+{/* <Overlay id={id}/> */}
+           
           </skinnedMesh>
           <skinnedMesh
             name="eye"

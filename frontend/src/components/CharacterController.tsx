@@ -283,6 +283,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
             position-y={-1.3}
             animation={animation}
             color={color}
+            id={id}
           />
         </group>
       </group>
