@@ -3,31 +3,38 @@ import React, { useState } from "react";
 import Head from "next/head";
 import { motion } from "motion/react";
 import { Cctv } from "lucide-react";
-import axios from "axios";
-import { useSetRecoilState } from "recoil";
-import { authAtom } from "@/recoil/auth";
+
 import { toast } from "sonner";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const page = () => {
+  const router = useRouter();
   const [authData, setAuthData] = useState({
     name: "",
     email: "",
     password: "",
   });
-  const setSession = useSetRecoilState(authAtom);
   const handleLogin = async () => {
+   
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`,
-        { authData }
-      );
-      if (res.status == 200) {
-        setSession(res.data);
-        toast("Login Success");
+      const result = await signIn("credentials", {
+        authData,
+        redirect: false,
+      });
+      if (result?.error) {
+        toast("Invalid email or password.");
+      } else {
+        toast("Login success");
+
+        router.push("/home");
       }
     } catch (error) {
-      toast("something went wrong");
+      console.error("Login error:", error);
+      toast("An error occurred. Please try again.");
+    } finally {
     }
+  
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-purple-900 text-white overflow-hidden relative">
@@ -96,7 +103,16 @@ const page = () => {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               className="w-full py-3 px-4 bg-white rounded-lg text-gray-800 font-medium flex items-center justify-center space-x-3 hover:shadow-lg transition duration-300 mb-6"
-              onClick={() => console.log("Google Auth")}
+              onClick={async () => {
+                try {
+                  const a = await signIn("google", { callbackUrl: "/" });
+                  if (a?.ok) {
+                    toast("Login success");
+                  }
+                } catch (error) {
+                  toast("Google login failed. Please try again.");
+                }
+              }}
             >
               <Cctv /> <span>Continue with Google</span>
             </motion.button>

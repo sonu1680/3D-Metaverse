@@ -22,7 +22,7 @@ export const Experience = () => {
     <>
       {/* <OrbitControls /> */}
       <Environment preset="sunset" />
-      <directionalLight
+      {/* <directionalLight
         intensity={0.65}
         castShadow
         position={[-15, 10, 15]}
@@ -38,7 +38,7 @@ export const Experience = () => {
           ref={shadowCameraRef}
           attach={"shadow-camera"}
         />
-      </directionalLight>
+      </directionalLight> */}
       <Physics  gravity={[0, -9.81, 0]}>
         <Map scale={5} position={[-6, -10, 0]} model={"/models/ground.glb"} />
         {characters.map((data) => (
@@ -46,9 +46,7 @@ export const Experience = () => {
           <CharacterController
             key={data.id}
             position={data.position}
-            host={data.host}
             rotation={data.rotation}
-            remoteAnimation={data.animation}
             id={data.id}
             color={data.color}
          

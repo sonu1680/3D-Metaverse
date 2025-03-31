@@ -1,17 +1,11 @@
-import {
-  Billboard,
-  Box,
-  Plane,
-  Text,
-  useKeyboardControls,
-} from "@react-three/drei";
+import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
   RapierRigidBody,
   RigidBody,
 } from "@react-three/rapier";
-import {  useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MathUtils, Vector3, Group } from "three";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { degToRad } from "three/src/math/MathUtils.js";
@@ -19,7 +13,7 @@ import { Character } from "./Character";
 import { lerpAngle } from "../utils/LerpAngle";
 import { CharacterControllerProps } from "@/types/characterController";
 import { userAtom } from "@/recoil/char";
-import { roomAtom } from "@/recoil/roomId";
+import { roomAtom, videRoomAtom } from "@/recoil/roomId";
 import { isPlayerCloseAtom, myPostiotionAtom } from "@/recoil/myPositon";
 import { isPlayerClose } from "@/utils/isPlayerClose";
 import useUserVideoList from "@/hooks/useUserVideoList";
@@ -31,12 +25,11 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
   id,
   color,
-  remoteAnimation,
- 
 }) => {
-   const myVideo = useRecoilValue(myVideoState);
+  const myVideo = useRecoilValue(myVideoState);
   const remoteVideo = useRecoilValue(remoteVideoState);
   const roomId = useRecoilValue(roomAtom);
+  const videoRoomId = useRecoilValue(videRoomAtom);
   const WALK_SPEED = 6;
   const RUN_SPEED = 6;
   const ROTATION_SPEED = degToRad(1);
@@ -70,7 +63,6 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
         "gameData",
         JSON.stringify({
           position: fixedPos,
-          animation: remoteAnimation,
           roomId: roomId,
           rotation: [container.current?.rotation.y, rotationTarget.current],
           type: "CharacterMove",
@@ -172,19 +164,23 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
           const playerIsClose: Boolean = isPlayerClose(myPosition, position);
           if (playerIsClose) {
             if (!videoUser.includes(id)) {
-            socket.emit('videoCall',JSON.stringify({type:'initiator',me:user,remote:id}))
+              socket.emit(
+                "videoCall",
+                JSON.stringify({ type: "initiator", me: user, remote: id })
+              );
               setPlayerClose(true);
               addUserToVideoList(id);
             }
           } else {
             if (videoUser.includes(id)) {
               removeUserFromVideoList(id);
-                          socket.emit(
-                            "videoCall",
-                            JSON.stringify({
-                              type: "endCall",
-                            })
-                          );
+              socket.emit(
+                "videoCall",
+                JSON.stringify({
+                  type: "endCall",
+                  room: videoRoomId,
+                })
+              );
 
               setPlayerClose(false);
             }
@@ -205,14 +201,13 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
         const distance = currentPosition.current.distanceTo(
           targetPosition.current
         );
-        if (distance > 0.1) {
-
+        if (distance > 0.2) {
           const direction = currentPosition.current
             .clone()
             .sub(targetPosition.current)
             .normalize()
-            .multiplyScalar(0.036);
-             rb.current.setTranslation(
+            .multiplyScalar(0.03);
+          rb.current.setTranslation(
             currentPosition.current.sub(direction),
             false
           );
@@ -229,8 +224,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
               0.1
             );
           }
-                  setAnimation("run");
-
+          setAnimation("run");
         } else {
           setAnimation("idle");
         }
@@ -248,7 +242,6 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
     };
   }, []);
 
-
   return (
     <RigidBody
       ref={rb}
@@ -256,7 +249,6 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       lockRotations
       type={user === id ? "dynamic" : "kinematicPosition"}
     >
-     
       <CharacterNameOnHead id={id} />
       {videoUser.includes(id) && (
         <MemoizedVideoBillboard

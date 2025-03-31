@@ -17,3 +17,8 @@ export const userAtom = atom({
   key: "userAtom",
   default: null,
 });
+
+export const userNameAtom = atom<any>({
+  key: "userNameAtom",
+  default: null,
+});

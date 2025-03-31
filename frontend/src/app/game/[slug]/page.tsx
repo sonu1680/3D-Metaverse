@@ -21,18 +21,7 @@ const Page = ({ params }: any) => {
   const { characters } = useSocket(roomId);
   const { callFun, endCall, myVideo, remoteVideo } = useCall();
   const player = useRecoilValue(isPlayerCloseAtom);
-  // useMemo(() => {
-  //   if (player) {
-  //   callFun()
-  //   } else {
-  //     socket.emit(
-  //       "videoCall",
-  //       JSON.stringify({ type: "endCall", room: "123" })
-  //     );
-  //     endCall();
-  //     console.log("end call");
-  //   }
-  // }, [player]);
+
 
   useEffect(() => {
     if (characters.length > 0) {

@@ -1,5 +1,5 @@
 import { normalizeAngle } from "./NormalizeAngle";
-export const lerpAngle = (start, end, t) => {
+export const lerpAngle = (start:any, end:any, t:any) => {
   start = normalizeAngle(start);
   end = normalizeAngle(end);
 

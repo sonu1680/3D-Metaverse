@@ -1,4 +1,5 @@
 import { socket } from "@/lib/socket";
+import { videRoomAtom } from "@/recoil/roomId";
 import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRecoilState, useSetRecoilState } from "recoil";
@@ -9,6 +10,7 @@ const useCall = () => {
   // const [remoteVideo, setRemoteVideo] = useState<MediaStream | null>(null);
   const [myVideo, setMyVideo] = useRecoilState(myVideoState);
   const [remoteVideo, setRemoteVideo] = useRecoilState(remoteVideoState);
+  const setVideoroomId = useSetRecoilState(videRoomAtom);
   const callRef = useRef<any>(null);
   const setupConnectionEvents = (peer: RTCPeerConnection) => {
     peer.onicecandidate = (event) => {
@@ -64,6 +66,7 @@ const useCall = () => {
   };
 
   const endCall = async () => {
+    console.log('call ended')
     if (me.current) {
       me.current.close();
       me.current = null;
@@ -101,6 +104,7 @@ const useCall = () => {
         case "callData":
           if (callRef.current === null) {
             callRef.current = data;
+            setVideoroomId(callRef.current.roomId);
             socket.emit(
               "videoCall",
               JSON.stringify({
@@ -140,6 +144,7 @@ const useCall = () => {
           }
           break;
         case "endCall":
+          console.log('effect end call')
           endCall();
           break;
         default:
