@@ -91,7 +91,6 @@ io.on("connection", (socket:Socket) => {
     switch (data.type) {
       case "initiator":
         const { me, remote } = data;
-        console.log(data)
         const newData = {
           type: "callData",
           caller: me,

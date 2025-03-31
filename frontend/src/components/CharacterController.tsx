@@ -253,6 +253,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       {videoUser.includes(id) && (
         <MemoizedVideoBillboard
           videoSrc={remoteVideo}
+          type="remote"
           refs={textRef}
           args={[4, 3, 3]}
         />
@@ -262,6 +263,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
         <MemoizedVideoBillboard
           videoSrc={myVideo}
           refs={textRef}
+          type="me"
           args={[4, 3, 3]}
         />
       )}
