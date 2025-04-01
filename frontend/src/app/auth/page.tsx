@@ -27,7 +27,7 @@ const page = () => {
       } else {
         toast("Login success");
 
-        router.push("/home");
+        router.push("/");
       }
     } catch (error) {
       console.error("Login error:", error);
