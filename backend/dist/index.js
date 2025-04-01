@@ -21,6 +21,10 @@ const io = new socket_io_1.Server(server, {
         methods: ["GET", "POST"],
     },
 });
+app.get('/test', (req, res) => {
+    res.send("test");
+    res.end;
+});
 const characters = {};
 io.on("connection", (socket) => {
     //logic for multiplayer game

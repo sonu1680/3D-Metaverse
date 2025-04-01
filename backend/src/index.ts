@@ -20,6 +20,11 @@ const io = new Server(server, {
   },
 });
 
+app.get('/test',(req,res)=>{
+   res.send("test")
+   res.end
+})
+
 const characters:any = {};
 io.on("connection", (socket:Socket) => {
   //logic for multiplayer game
