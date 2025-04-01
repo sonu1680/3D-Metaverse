@@ -42,14 +42,14 @@ const Page = ({ params }: any) => {
         }}
       >
         <Suspense fallback={null}>
-          <KeyboardControls map={keyboardMap}>
+        <KeyboardControls map={keyboardMap}>
             <Canvas
               shadows
               camera={{ position: [3, 3, 3], near: 0.1, fov: 40 }}
             >
               <Experience />
             </Canvas>
-          </KeyboardControls>
+      </KeyboardControls>
         </Suspense>
       </div>
 
@@ -60,7 +60,8 @@ const Page = ({ params }: any) => {
           position: "absolute",
           left: "80vw",
         }}
-      >
+        >
+
         <Chat />
       </div>
     </>

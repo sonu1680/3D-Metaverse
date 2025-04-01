@@ -17,7 +17,6 @@ const useSocket = (roomId: string) => {
       socket.connect();
 
       socket.on("connect", () => {
-        console.log('socket connect')
         
       });
       socket.emit("gameData", JSON.stringify({ type: "joinGame", roomId: roomId }));

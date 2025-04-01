@@ -1,4 +1,4 @@
-import { useKeyboardControls } from "@react-three/drei";
+import {  useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
@@ -21,6 +21,7 @@ import { socket } from "@/lib/socket";
 import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
 import { MemoizedVideoBillboard } from "./Billboard";
 import { CharacterNameOnHead } from "./CharacterNameOnHead";
+import { OrthographicCamera as OrthographicCameraType } from "three";
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
   id,
@@ -30,12 +31,14 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const remoteVideo = useRecoilValue(remoteVideoState);
   const roomId = useRecoilValue(roomAtom);
   const videoRoomId = useRecoilValue(videRoomAtom);
-  const WALK_SPEED = 6;
-  const RUN_SPEED = 6;
-  const ROTATION_SPEED = degToRad(1);
+  const WALK_SPEED = 7;
+  const RUN_SPEED = 7;
+  const ROTATION_SPEED = degToRad(0.98);
   const rb = useRef<RapierRigidBody>(null);
   const container = useRef<Group>(null);
   const character = useRef<Group>(null);
+
+  const isClicking = useRef(false);
 
   const [animation, setAnimation] = useState<string>("idle");
   const user = useRecoilValue(userAtom);
@@ -84,7 +87,28 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       emitInterval.current = null;
     }
   };
-  useFrame(({ camera }) => {
+
+    useEffect(() => {
+      const onMouseDown = (e: any) => {
+        isClicking.current = true;
+      };
+      const onMouseUp = (e: any) => {
+        isClicking.current = false;
+      };
+      document.addEventListener("mousedown", onMouseDown);
+      document.addEventListener("mouseup", onMouseUp);
+      // touch
+      document.addEventListener("touchstart", onMouseDown);
+      document.addEventListener("touchend", onMouseUp);
+      return () => {
+        document.removeEventListener("mousedown", onMouseDown);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("touchstart", onMouseDown);
+        document.removeEventListener("touchend", onMouseUp);
+      };
+    }, []);
+
+  useFrame(({ camera,mouse }) => {
     if (rb.current) {
       const controls = get();
       const vel = rb.current.linvel();
@@ -105,6 +129,17 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
           vel.y = 10;
         }
         startEmittingPosition();
+
+        ///mouse control
+        if (isClicking.current) {
+          if (Math.abs(mouse.x) > 0.1) {
+            movement.x = -mouse.x;
+          }
+          movement.z = mouse.y + 0.4;
+          if (Math.abs(movement.x) > 0.5 || Math.abs(movement.z) > 0.5) {
+            speed = 7;
+          }
+        }
 
         if (movement.x !== 0)
           rotationTarget.current += ROTATION_SPEED * movement.x;
@@ -201,12 +236,12 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
         const distance = currentPosition.current.distanceTo(
           targetPosition.current
         );
-        if (distance > 0.2) {
+        if (distance > 0.4) {
           const direction = currentPosition.current
             .clone()
             .sub(targetPosition.current)
             .normalize()
-            .multiplyScalar(0.03);
+            .multiplyScalar(0.04);
           rb.current.setTranslation(
             currentPosition.current.sub(direction),
             false
@@ -242,6 +277,8 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
     };
   }, []);
 
+  
+
   return (
     <RigidBody
       ref={rb}
@@ -249,6 +286,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
       lockRotations
       type={user === id ? "dynamic" : "kinematicPosition"}
     >
+  
       <CharacterNameOnHead id={id} />
       {videoUser.includes(id) && (
         <MemoizedVideoBillboard

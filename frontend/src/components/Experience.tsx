@@ -26,9 +26,9 @@ export const Experience = () => {
         intensity={0.65}
         castShadow
         position={[-15, 10, 15]}
-        shadow-mapSize-width={10000}
-        shadow-mapSize-height={10000}
-        shadow-bias={-0.00005}
+        shadow-mapSize-width={200}
+        shadow-mapSize-height={200}
+        shadow-bias={-0.0001}
       >
         <OrthographicCamera
           left={-22}
@@ -39,21 +39,19 @@ export const Experience = () => {
           attach={"shadow-camera"}
         />
       </directionalLight> */}
-      <Physics  gravity={[0, -9.81, 0]}>
-        <Map scale={5} position={[-6, -10, 0]} model={"/models/ground.glb"} />
+      <Physics gravity={[0, -9.81, 0]}>
+        <Map scale={5} position={[-6, -10, 0]} model={"/models/book.glb"} />
         {characters.map((data) => (
-          
           <CharacterController
             key={data.id}
             position={data.position}
             rotation={data.rotation}
             id={data.id}
             color={data.color}
-         
           />
         ))}
       </Physics>
     </>
-  )
+  );
 }
 ;
