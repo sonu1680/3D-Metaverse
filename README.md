@@ -1,6 +1,6 @@
 # 3D Metaverse Game
 
-![Metaverse Preview](https://via.placeholder.com/800x400.png?text=Metaverse+Game+Preview)
+## 🌟 Live View ([https://via.placeholder.com/800x400.png?text=Metaverse+Game+Preview](https://metaverse.sonupandit.in/))
 
 A next-generation **3D multiplayer metaverse game** where users can explore, interact, and engage in **real-time video calls**, similar to Omegle. Built with **React Three Fiber** for immersive 3D rendering and **Rapier** for physics simulation.
 
