@@ -1,4 +1,4 @@
-import {  useKeyboardControls } from "@react-three/drei";
+import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import {
   CapsuleCollider,
@@ -39,7 +39,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const rb = useRef<RapierRigidBody>(null);
   const container = useRef<Group>(null);
   const character = useRef<Group>(null);
-const peerid = useRecoilValue(peerIdAtom);
+  const peerid = useRecoilValue(peerIdAtom);
   const isClicking = useRef(false);
 
   const [animation, setAnimation] = useState<string>("idle");
@@ -58,6 +58,8 @@ const peerid = useRecoilValue(peerIdAtom);
   const { videoUser, addUserToVideoList, removeUserFromVideoList } =
     useUserVideoList();
   const textRef = useRef<any>();
+  const controls = get();
+
   const emitInterval = useRef<NodeJS.Timeout | null>(null);
   const [playerClose, setPlayerClose] = useRecoilState(isPlayerCloseAtom);
   const emitPosition = () => {
@@ -90,29 +92,57 @@ const peerid = useRecoilValue(peerIdAtom);
     }
   };
 
-    useEffect(() => {
-      const onMouseDown = (e: any) => {
-        isClicking.current = true;
-      };
-      const onMouseUp = (e: any) => {
-        isClicking.current = false;
-      };
-      document.addEventListener("mousedown", onMouseDown);
-      document.addEventListener("mouseup", onMouseUp);
-      // touch
-      document.addEventListener("touchstart", onMouseDown);
-      document.addEventListener("touchend", onMouseUp);
-      return () => {
-        document.removeEventListener("mousedown", onMouseDown);
-        document.removeEventListener("mouseup", onMouseUp);
-        document.removeEventListener("touchstart", onMouseDown);
-        document.removeEventListener("touchend", onMouseUp);
-      };
-    }, []);
+  useEffect(() => {
+    const onMouseDown = (e: any) => {
+      isClicking.current = true;
+    };
+    const onMouseUp = (e: any) => {
+      isClicking.current = false;
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("mouseup", onMouseUp);
+    // touch
+    document.addEventListener("touchstart", onMouseDown);
+    document.addEventListener("touchend", onMouseUp);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("mouseup", onMouseUp);
+      document.removeEventListener("touchstart", onMouseDown);
+      document.removeEventListener("touchend", onMouseUp);
+    };
+  }, []);
 
-  useFrame(({ camera,mouse }) => {
+  const walkSound = useRef(new Audio("/sound/running.mp3"));
+  const jumpSound = useRef(new Audio("/sound/jump.mp3"));
+  const envSound = useRef(new Audio("/sound/environment.mp3"));
+
+  const handleUserInteraction = () => {
+    envSound.current.play();
+    document.removeEventListener("click", handleUserInteraction);
+    document.removeEventListener("keydown", handleUserInteraction);
+  };
+  useEffect(() => {
+    walkSound.current.loop = true;
+    envSound.current.loop = true;
+
+    document.addEventListener("click", handleUserInteraction);
+
+    document.addEventListener("keydown", handleUserInteraction);
+
+    return () => {
+      document.removeEventListener("click", handleUserInteraction);
+      document.removeEventListener("keydown", handleUserInteraction);
+
+      walkSound.current.pause();
+      walkSound.current.currentTime = 0;
+      jumpSound.current.pause();
+      jumpSound.current.currentTime = 0;
+      // envSound.current.pause();
+      // envSound.current.currentTime = 0;
+    };
+  }, []);
+  useFrame(({ camera, mouse }) => {
     if (rb.current) {
-      const controls = get();
       const vel = rb.current.linvel();
       const movement = { x: 0, y: 0, z: 0 };
 
@@ -155,8 +185,15 @@ const peerid = useRecoilValue(peerIdAtom);
             Math.cos(rotationTarget.current + characterRotationTarget.current) *
             speed;
           setAnimation(speed === RUN_SPEED ? "run" : "walk");
+          walkSound.current.play();
         } else {
           setAnimation(movement.y !== 0 ? "jump_air" : "idle");
+          if (movement.y !== 0) {
+            jumpSound.current.play();
+          }
+
+          walkSound.current.pause();
+          walkSound.current.currentTime = 0;
         }
 
         if (character.current) {
@@ -225,8 +262,6 @@ const peerid = useRecoilValue(peerIdAtom);
                 })
               );
               setPlayerClose(false);
-
-             
             }
           }
         }
@@ -286,8 +321,6 @@ const peerid = useRecoilValue(peerIdAtom);
     };
   }, []);
 
-  
-
   return (
     <RigidBody
       ref={rb}
@@ -295,7 +328,6 @@ const peerid = useRecoilValue(peerIdAtom);
       lockRotations
       type={user === id ? "dynamic" : "kinematicPosition"}
     >
-  
       <CharacterNameOnHead id={id} />
       {videoUser.includes(id) && (
         <MemoizedVideoBillboard
