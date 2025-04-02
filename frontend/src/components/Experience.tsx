@@ -39,6 +39,7 @@ export const Experience = () => {
           attach={"shadow-camera"}
         />
       </directionalLight> */}
+      <color attach="background" args={["#87CEEB"]} />
       <Physics gravity={[0, -9.81, 0]}>
         <Map scale={5} position={[-6, -10, 0]} model={"/models/book.glb"} />
         {characters.map((data) => (

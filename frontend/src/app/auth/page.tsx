@@ -7,6 +7,7 @@ import { Cctv } from "lucide-react";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const page = () => {
   const router = useRouter();
@@ -114,18 +115,18 @@ const page = () => {
                 }
               }}
             >
-              <Cctv /> <span>Continue with Google</span>
+              <Image alt={'google'} height={20} width={20} src={'/images/google.png'} />  <span>Continue with Google</span>
             </motion.button>
 
             {/* Divider */}
-            <div className="flex items-center mb-6">
+            {/* <div className="flex items-center mb-6">
               <div className="flex-1 h-px bg-gray-500/30"></div>
               <span className="px-4 text-sm text-gray-400">or</span>
               <div className="flex-1 h-px bg-gray-500/30"></div>
-            </div>
+            </div> */}
 
             {/* name input */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Name
               </label>
@@ -140,10 +141,10 @@ const page = () => {
                 className="w-full px-4 py-2 rounded-lg bg-black/50 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 placeholder="sonu"
               />
-            </div>
+            </div> */}
 
             {/* Email input */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Email Address
               </label>
@@ -158,10 +159,10 @@ const page = () => {
                 className="w-full px-4 py-2 rounded-lg bg-black/50 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                 placeholder="your@email.com"
               />
-            </div>
+            </div> */}
 
             {/* Password input */}
-            <div className="mb-6">
+            {/* <div className="mb-6">
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Password
               </label>
@@ -176,20 +177,20 @@ const page = () => {
                   }))
                 }
               />
-            </div>
+            </div> */}
 
             {/* Login button */}
-            <motion.button
+            {/* <motion.button
               onClick={handleLogin}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-white font-medium hover:from-blue-700 hover:to-purple-700 transition duration-300"
             >
               Enter Metaverse
-            </motion.button>
+            </motion.button> */}
 
             {/* Footer links */}
-            <div className="mt-6 text-center text-sm text-gray-400">
+            {/* <div className="mt-6 text-center text-sm text-gray-400">
               <a href="#" className="hover:text-white transition">
                 Forgot Password?
               </a>
@@ -197,7 +198,7 @@ const page = () => {
               <a href="#" className="hover:text-white transition">
                 Create Account
               </a>
-            </div>
+            </div> */}
           </div>
         </motion.div>
       </main>
