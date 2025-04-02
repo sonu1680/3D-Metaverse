@@ -112,35 +112,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
     };
   }, []);
 
-  const walkSound = useRef(new Audio("/sound/running.mp3"));
-  const jumpSound = useRef(new Audio("/sound/jump.mp3"));
-  const envSound = useRef(new Audio("/sound/environment.mp3"));
 
-  const handleUserInteraction = () => {
-    envSound.current.play();
-    document.removeEventListener("click", handleUserInteraction);
-    document.removeEventListener("keydown", handleUserInteraction);
-  };
-  useEffect(() => {
-    walkSound.current.loop = true;
-    envSound.current.loop = true;
-
-    document.addEventListener("click", handleUserInteraction);
-
-    document.addEventListener("keydown", handleUserInteraction);
-
-    return () => {
-      document.removeEventListener("click", handleUserInteraction);
-      document.removeEventListener("keydown", handleUserInteraction);
-
-      walkSound.current.pause();
-      walkSound.current.currentTime = 0;
-      jumpSound.current.pause();
-      jumpSound.current.currentTime = 0;
-      // envSound.current.pause();
-      // envSound.current.currentTime = 0;
-    };
-  }, []);
   useFrame(({ camera, mouse }) => {
     if (rb.current) {
       const vel = rb.current.linvel();
@@ -185,15 +157,9 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
             Math.cos(rotationTarget.current + characterRotationTarget.current) *
             speed;
           setAnimation(speed === RUN_SPEED ? "run" : "walk");
-          walkSound.current.play();
         } else {
           setAnimation(movement.y !== 0 ? "jump_air" : "idle");
-          if (movement.y !== 0) {
-            jumpSound.current.play();
-          }
-
-          walkSound.current.pause();
-          walkSound.current.currentTime = 0;
+         
         }
 
         if (character.current) {
@@ -238,6 +204,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
           const playerIsClose: Boolean = isPlayerClose(myPosition, position);
           if (playerIsClose) {
             if (!videoUser.includes(id)) {
+              console.log(peerid)
               socket.emit(
                 "videoCall",
                 JSON.stringify({
@@ -285,7 +252,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
             .clone()
             .sub(targetPosition.current)
             .normalize()
-            .multiplyScalar(0.09);
+            .multiplyScalar(0.06);
           rb.current.setTranslation(
             currentPosition.current.sub(direction),
             false

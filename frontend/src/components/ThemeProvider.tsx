@@ -8,7 +8,8 @@ export function ThemeProvider({
   children,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
-     const {endCall } = useVideoCall();
+     const { endCall } = useVideoCall();
+  
 
   return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
 }

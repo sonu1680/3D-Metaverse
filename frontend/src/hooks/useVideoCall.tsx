@@ -14,18 +14,15 @@ interface VideoCallState {
 }
 
 const useVideoCall = () => {
-  // Core refs to maintain across renders
+  console.log('call initer')
   const peerRef = useRef<Peer | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
   //@ts-ignore
   const callRef = useRef<Peer.MediaConnection | null>(null);
 
-  // Recoil state management
   const setPeerIdState = useSetRecoilState(peerIdAtom);
   const [myVideo, setMyVideoStream] = useRecoilState(myVideoState);
   const [remoteVideo, setRemoteStream] = useRecoilState(remoteVideoState);
 const oneCall=useRef<boolean|null>(null)
-  // Component state
   const [callState, setCallState] = useState<VideoCallState>({
     isCallActive: false,
     isConnecting: false,
@@ -34,7 +31,7 @@ const oneCall=useRef<boolean|null>(null)
 
   // Initialize media stream
   const initializeLocalStream = useCallback(async () => {
-    if (localStreamRef.current) return localStreamRef.current;
+    if (myVideo) return myVideo;
 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -42,7 +39,6 @@ const oneCall=useRef<boolean|null>(null)
         audio: true,
       });
 
-      localStreamRef.current = mediaStream;
       setMyVideoStream(mediaStream);
       return mediaStream;
     } catch (error) {
@@ -98,7 +94,6 @@ const oneCall=useRef<boolean|null>(null)
     [initializeLocalStream, setRemoteStream]
   );
 
-  // Initialize peer connection
   useEffect(() => {
     if (peerRef.current) return;
 
@@ -107,12 +102,17 @@ const oneCall=useRef<boolean|null>(null)
         config: {
           iceServers: [
             { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:global.stun.twilio.com:3478" },
+            {
+              urls: "turn:turn.anyfirewall.com:443?transport=tcp",
+              username: "webrtc",
+              credential: "webrtc",
+            },
           ],
         },
       });
 
       newPeer.on("open", (id) => {
+        console.log(id)
         setPeerIdState(id);
       });
 
@@ -142,7 +142,6 @@ const oneCall=useRef<boolean|null>(null)
     };
   }, [handleIncomingCall, setPeerIdState]);
 
-  // Call another peer
   const callPeer = useCallback(
     
     async (targetPeerId: string) => {
@@ -182,7 +181,6 @@ const oneCall=useRef<boolean|null>(null)
           }));
         });
 
-        // Set timeout for unanswered calls
         const timeout = setTimeout(() => {
           if (!remoteVideo && callRef.current === call) {
             setCallState((prev) => ({
@@ -193,9 +191,8 @@ const oneCall=useRef<boolean|null>(null)
             call.close();
             callRef.current = null;
           }
-        }, 30000); // 30 seconds timeout
+        }, 30000);
 
-        // Clear timeout if call connects
         call.on("stream", () => clearTimeout(timeout));
       } catch (error) {
         setCallState((prev) => ({
@@ -208,15 +205,15 @@ const oneCall=useRef<boolean|null>(null)
     [initializeLocalStream, remoteVideo, setRemoteStream]
   );
 
-  // Handle call ending
   const handleCallEnded = useCallback(() => {
     setCallState((prev) => ({
       ...prev,
       isCallActive: false,
       isConnecting: false,
     }));
+    setMyVideoStream(null);
     setRemoteStream(null);
-  }, [setRemoteStream]);
+  }, [setRemoteStream, setMyVideoStream]);
 
   // End the active call
   const endCall = useCallback(() => {
@@ -240,9 +237,8 @@ const oneCall=useRef<boolean|null>(null)
 
   // Stop local media stream
   const stopLocalStream = useCallback(() => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
+    if (myVideo) {
+      myVideo.getTracks().forEach((track) => track.stop());
       setMyVideoStream(null);
     }
   }, [setMyVideoStream]);
@@ -255,17 +251,15 @@ const oneCall=useRef<boolean|null>(null)
       callRef.current = null;
     }
 
-    // Stop media streams
     stopLocalStream();
+    setMyVideoStream(null)
     setRemoteStream(null);
 
-    // Destroy peer connection
     if (peerRef.current) {
       peerRef.current.destroy();
       peerRef.current = null;
     }
 
-    // Reset state
     setCallState({
       isCallActive: false,
       isConnecting: false,

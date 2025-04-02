@@ -82,6 +82,7 @@ io.on("connection", (socket) => {
         const data = JSON.parse(msg);
         switch (data.type) {
             case "initiator":
+                console.log(data);
                 const { me, remote, peerid } = data;
                 const newData = {
                     type: "callData",
