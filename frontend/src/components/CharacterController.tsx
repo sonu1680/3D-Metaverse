@@ -22,6 +22,8 @@ import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
 import { MemoizedVideoBillboard } from "./Billboard";
 import { CharacterNameOnHead } from "./CharacterNameOnHead";
 import { OrthographicCamera as OrthographicCameraType } from "three";
+import { peerIdAtom } from "@/recoil/videocallAtom";
+
 export const CharacterController: React.FC<CharacterControllerProps> = ({
   position,
   id,
@@ -37,7 +39,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
   const rb = useRef<RapierRigidBody>(null);
   const container = useRef<Group>(null);
   const character = useRef<Group>(null);
-
+const peerid = useRecoilValue(peerIdAtom);
   const isClicking = useRef(false);
 
   const [animation, setAnimation] = useState<string>("idle");
@@ -201,10 +203,15 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
             if (!videoUser.includes(id)) {
               socket.emit(
                 "videoCall",
-                JSON.stringify({ type: "initiator", me: user, remote: id })
+                JSON.stringify({
+                  type: "initiator",
+                  me: user,
+                  remote: id,
+                  peerid: peerid,
+                })
               );
-              setPlayerClose(true);
               addUserToVideoList(id);
+              setPlayerClose(true);
             }
           } else {
             if (videoUser.includes(id)) {
@@ -213,11 +220,13 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
                 "videoCall",
                 JSON.stringify({
                   type: "endCall",
-                  room: videoRoomId,
+                  me: user,
+                  remote: id,
                 })
               );
-
               setPlayerClose(false);
+
+             
             }
           }
         }
@@ -241,7 +250,7 @@ export const CharacterController: React.FC<CharacterControllerProps> = ({
             .clone()
             .sub(targetPosition.current)
             .normalize()
-            .multiplyScalar(0.04);
+            .multiplyScalar(0.09);
           rb.current.setTranslation(
             currentPosition.current.sub(direction),
             false

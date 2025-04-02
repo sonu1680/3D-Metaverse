@@ -1,148 +1,317 @@
-// import React, { useEffect, useRef, useState } from "react";
-// import Peer from "peerjs";
-// import { useRecoilState } from "recoil";
-// import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
-// import { socket } from "@/lib/socket";
+"use client";
 
-// const useVideoCall: React.FC = () => {
-//   const callRef = useRef<any>(null);
-// console.log("videocall")
-//   const [myVideo, setMyVideo] = useRecoilState(myVideoState);
-//   const [remoteVideo, setRemoteVideo] = useRecoilState(remoteVideoState);
-//   const [peerId, setPeerId] = useState<string>("");
-//   const [remoteId, setRemoteId] = useState<string>("");
-//   const [peer, setPeer] = useState<InstanceType<typeof Peer> | null>(null);
-//   //@ts-ignore
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import Peer from "peerjs";
+import { socket } from "@/lib/socket";
+import { peerIdAtom } from "@/recoil/videocallAtom";
+import { useSetRecoilState, useRecoilState } from "recoil";
+import { myVideoState, remoteVideoState } from "@/recoil/videoStore";
 
-//   const [callInstance, setCallInstance] = useState<Peer.MediaConnection | null>(
-//     null
-//   );
-//   const localVideoRef = useRef<HTMLVideoElement>(null);
-//   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+interface VideoCallState {
+  isCallActive: boolean;
+  isConnecting: boolean;
+  error: string | null;
+}
 
-//   useEffect(() => {
-//        if (!socket.connected) {
-//          socket.connect();
-//          socket.on("connect", () => {});
-//        }
+const useVideoCall = () => {
+  // Core refs to maintain across renders
+  const peerRef = useRef<Peer | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  //@ts-ignore
+  const callRef = useRef<Peer.MediaConnection | null>(null);
 
-//     socket.on("videoCall", async (msg) => {
-//       const data = JSON.parse(msg);
-//       switch (data.type) {
-//         case "callData":
-//             console.log(data)
-//           if (callRef.current === null) {
-//             callRef.current = data;
-//             socket.emit(
-//               "videoCall",
-//               JSON.stringify({
-//                 type: "register",
-//                 room: callRef.current.roomId,
-//               })
-//             );
-//           }
-//           break;
-//       }
+  // Recoil state management
+  const setPeerIdState = useSetRecoilState(peerIdAtom);
+  const [myVideo, setMyVideoStream] = useRecoilState(myVideoState);
+  const [remoteVideo, setRemoteStream] = useRecoilState(remoteVideoState);
+const oneCall=useRef<boolean|null>(null)
+  // Component state
+  const [callState, setCallState] = useState<VideoCallState>({
+    isCallActive: false,
+    isConnecting: false,
+    error: null,
+  });
 
-      
-//     });
+  // Initialize media stream
+  const initializeLocalStream = useCallback(async () => {
+    if (localStreamRef.current) return localStreamRef.current;
 
-//     const newPeer = new Peer();
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
 
-//     newPeer.on("open", (id: string) => {
-//       setPeerId(id);
-//     });
-//     //@ts-ignore
-//     newPeer.on("call", (call: Peer.MediaConnection) => {
-//       navigator.mediaDevices
-//         .getDisplayMedia({ video: true, audio: true })
-//         .then((stream) => {
-//           if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-//           call.answer(stream);
-//           setCallInstance(call);
-//           call.on("stream", (remoteStream: any) => {
-//             if (remoteVideoRef.current)
-//               remoteVideoRef.current.srcObject = remoteStream;
-//           });
-//         });
-//     });
+      localStreamRef.current = mediaStream;
+      setMyVideoStream(mediaStream);
+      return mediaStream;
+    } catch (error) {
+      setCallState((prev) => ({
+        ...prev,
+        error: "Could not access camera or microphone",
+      }));
+      throw error;
+    }
+  }, [setMyVideoStream]);
 
-//     setPeer(newPeer);
+  // Handle incoming call
+  const handleIncomingCall = useCallback(
+    //@ts-ignore
 
-//     return () => newPeer.destroy();
-//   }, []);
+    async (call: Peer.MediaConnection) => {
+      try {
+        setCallState((prev) => ({ ...prev, isConnecting: true, error: null }));
 
-//   const callPeer = () => {
-//     if (!peer || !remoteId) return;
-//     navigator.mediaDevices
-//       .getDisplayMedia({ video: true, audio: true })
-//       .then((stream) => {
-//         if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-//         const call = peer.call(remoteId, stream);
-//         setCallInstance(call);
-//         call.on("stream", (remoteStream) => {
-//           if (remoteVideoRef.current)
-//             remoteVideoRef.current.srcObject = remoteStream;
-//         });
-//       });
-//   };
+        const stream = await initializeLocalStream();
+        call.answer(stream);
+        callRef.current = call;
 
-//   const endCall = () => {
-//     if (callInstance) {
-//       callInstance.close();
-//       setCallInstance(null);
-//       if (localVideoRef.current?.srcObject) {
-//         (localVideoRef.current.srcObject as MediaStream)
-//           .getTracks()
-//           .forEach((track) => track.stop());
-//       }
-//       if (remoteVideoRef.current?.srcObject) {
-//         (remoteVideoRef.current.srcObject as MediaStream)
-//           .getTracks()
-//           .forEach((track) => track.stop());
-//       }
-//     }
-//   };
+        call.on("stream", (remoteStream: any) => {
+          setRemoteStream(remoteStream);
+          setCallState((prev) => ({
+            ...prev,
+            isCallActive: true,
+            isConnecting: false,
+            error: null,
+          }));
+        });
 
-//   return (
-//     <div className="p-5 text-center">
-//       <h1 className="text-xl font-bold">PeerJS Video Call</h1>
-//       <p className="my-2">Your ID: {peerId}</p>
-//       <input
-//         type="text"
-//         placeholder="Enter Remote Peer ID"
-//         value={remoteId}
-//         onChange={(e) => setRemoteId(e.target.value)}
-//         className="border p-2 rounded"
-//       />
-//       <button
-//         onClick={callPeer}
-//         className="ml-2 bg-blue-500 text-white p-2 rounded"
-//       >
-//         Call
-//       </button>
-//       <button
-//         onClick={endCall}
-//         className="ml-2 bg-red-500 text-white p-2 rounded"
-//       >
-//         End Call
-//       </button>
-//       <div className="grid grid-cols-2 gap-4 mt-5">
-//         <video
-//           ref={localVideoRef}
-//           autoPlay
-//           playsInline
-//           className="w-full border rounded"
-//         />
-//         <video
-//           ref={remoteVideoRef}
-//           autoPlay
-//           playsInline
-//           className="w-full border rounded"
-//         />
-//       </div>
-//     </div>
-//   );
-// };
+        call.on("close", () => {
+          handleCallEnded();
+        });
 
-// export default useVideoCall;
+        call.on("error", (err: any) => {
+          setCallState((prev) => ({
+            ...prev,
+            error: "Call error: " + err.message,
+            isConnecting: false,
+          }));
+        });
+      } catch (error) {
+        setCallState((prev) => ({
+          ...prev,
+          isConnecting: false,
+          error: "Failed to answer call",
+        }));
+      }
+    },
+    [initializeLocalStream, setRemoteStream]
+  );
+
+  // Initialize peer connection
+  useEffect(() => {
+    if (peerRef.current) return;
+
+    try {
+      const newPeer = new Peer({
+        config: {
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:global.stun.twilio.com:3478" },
+          ],
+        },
+      });
+
+      newPeer.on("open", (id) => {
+        setPeerIdState(id);
+      });
+
+      newPeer.on("call", handleIncomingCall);
+
+      newPeer.on("error", (err) => {
+        setCallState((prev) => ({
+          ...prev,
+          error: "Connection error: " + err.message,
+        }));
+      });
+
+      newPeer.on("disconnected", () => {
+        newPeer.reconnect();
+      });
+
+      peerRef.current = newPeer;
+    } catch (error) {
+      setCallState((prev) => ({
+        ...prev,
+        error: "Failed to initialize connection",
+      }));
+    }
+
+    return () => {
+      cleanupResources();
+    };
+  }, [handleIncomingCall, setPeerIdState]);
+
+  // Call another peer
+  const callPeer = useCallback(
+    
+    async (targetPeerId: string) => {
+      if (!peerRef.current) {
+        setCallState((prev) => ({
+          ...prev,
+          error: "Connection not initialized",
+        }));
+        return;
+      }
+
+      try {
+        setCallState((prev) => ({ ...prev, isConnecting: true, error: null }));
+
+        const stream = await initializeLocalStream();
+        const call = peerRef.current.call(targetPeerId, stream);
+        callRef.current = call;
+
+        call.on("stream", (remoteStream) => {
+          setRemoteStream(remoteStream);
+          setCallState((prev) => ({
+            ...prev,
+            isCallActive: true,
+            isConnecting: false,
+          }));
+        });
+
+        call.on("close", () => {
+          handleCallEnded();
+        });
+
+        call.on("error", (err) => {
+          setCallState((prev) => ({
+            ...prev,
+            error: "Call error: " + err.message,
+            isConnecting: false,
+          }));
+        });
+
+        // Set timeout for unanswered calls
+        const timeout = setTimeout(() => {
+          if (!remoteVideo && callRef.current === call) {
+            setCallState((prev) => ({
+              ...prev,
+              isConnecting: false,
+              error: "Call not answered",
+            }));
+            call.close();
+            callRef.current = null;
+          }
+        }, 30000); // 30 seconds timeout
+
+        // Clear timeout if call connects
+        call.on("stream", () => clearTimeout(timeout));
+      } catch (error) {
+        setCallState((prev) => ({
+          ...prev,
+          isConnecting: false,
+          error: "Failed to start call",
+        }));
+      }
+    },
+    [initializeLocalStream, remoteVideo, setRemoteStream]
+  );
+
+  // Handle call ending
+  const handleCallEnded = useCallback(() => {
+    setCallState((prev) => ({
+      ...prev,
+      isCallActive: false,
+      isConnecting: false,
+    }));
+    setRemoteStream(null);
+  }, [setRemoteStream]);
+
+  // End the active call
+  const endCall = useCallback(() => {
+    if (callRef.current) {
+      callRef.current.close();
+      callRef.current = null;
+    }
+
+    stopLocalStream();
+    handleCallEnded();
+
+    // Notify the other peer
+    socket.emit(
+      "videoCall",
+      JSON.stringify({
+        type: "endCall",
+      })
+    );
+
+  }, [handleCallEnded]);
+
+  // Stop local media stream
+  const stopLocalStream = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+      setMyVideoStream(null);
+    }
+  }, [setMyVideoStream]);
+
+  // Clean up all resources
+  const cleanupResources = useCallback(() => {
+    // End any active call
+    if (callRef.current) {
+      callRef.current.close();
+      callRef.current = null;
+    }
+
+    // Stop media streams
+    stopLocalStream();
+    setRemoteStream(null);
+
+    // Destroy peer connection
+    if (peerRef.current) {
+      peerRef.current.destroy();
+      peerRef.current = null;
+    }
+
+    // Reset state
+    setCallState({
+      isCallActive: false,
+      isConnecting: false,
+      error: null,
+    });
+  }, [setRemoteStream, stopLocalStream]);
+
+  // Handle socket events
+  useEffect(() => {
+    const handleSocketMessage = (msg: string) => {
+      try {
+        const data = JSON.parse(msg);
+        switch (data.type) {
+          case "callData":
+            if (oneCall.current && oneCall.current===true) return
+              if (data?.peerId) {
+                callPeer(data.peerId);
+                if(oneCall.current){
+
+                  oneCall.current = true;
+                }
+              }
+            break;
+          case "endCall":
+            endCall();
+             if (oneCall.current) {
+               oneCall.current = false;
+             }
+            break;
+        }
+      } catch (error) {
+      }
+    };
+
+    socket.on("videoCall", handleSocketMessage);
+
+    return () => {
+      socket.off("videoCall", handleSocketMessage);
+    };
+  }, [callPeer, endCall]);
+
+  return {
+    callPeer,
+    endCall,
+   
+  };
+};
+
+export default useVideoCall;

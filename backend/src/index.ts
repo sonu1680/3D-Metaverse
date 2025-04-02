@@ -95,31 +95,31 @@ io.on("connection", (socket:Socket) => {
     const data = JSON.parse(msg);
     switch (data.type) {
       case "initiator":
-        const { me, remote } = data;
+        const { me, remote, peerid } = data;
         const newData = {
           type: "callData",
           caller: me,
           receiver: remote,
           roomId: uuidv4(),
+          peerId: peerid,
         };
-        io.to(me).emit("videoCall", JSON.stringify(newData));
         io.to(remote).emit("videoCall", JSON.stringify(newData));
         break;
-      case "register":
-        socket.join(data.room);
-        break;
-      case "createOffer":
-        socket.to(data.room).emit("videoCall", msg);
-        break;
-      case "answerOffer":
-        socket.to(data.room).emit("videoCall", msg);
-        break;
+      // case "register":
+      //   socket.join(data.room);
+      //   break;
+      // case "createOffer":
+      //   socket.to(data.room).emit("videoCall", msg);
+      //   break;
+      // case "answerOffer":
+      //   socket.to(data.room).emit("videoCall", msg);
+      //   break;
 
-      case "iceCandidate":
-        socket.to(data.room).emit("videoCall", msg);
-        break;
+      // case "iceCandidate":
+      //   socket.to(data.room).emit("videoCall", msg);
+      //   break;
       case "endCall":
-        io.to(data.room).emit("videoCall", msg);
+        io.to(data.remote).emit("videoCall", msg);
     }
   });
 
