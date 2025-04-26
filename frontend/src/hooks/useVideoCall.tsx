@@ -14,7 +14,6 @@ interface VideoCallState {
 }
 
 const useVideoCall = () => {
-  console.log('call initer')
   const peerRef = useRef<Peer | null>(null);
   //@ts-ignore
   const callRef = useRef<Peer.MediaConnection | null>(null);

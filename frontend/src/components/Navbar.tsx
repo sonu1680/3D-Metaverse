@@ -1,84 +1,117 @@
-'use client'
-import React, { useState } from "react";
-import { ThemeToggle } from "./ThemeToggle";
-import Image from "next/image";
-import Link from "next/link";
-import {  } from "./ui/button";
-import BuyButton from "./BuyButton";
-import { motion } from "motion/react"; 
-import { useRouter } from "next/navigation";
+"use client";
 
-const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false); 
-  const router = useRouter();
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { Globe, Menu, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
+const navigation = [
+  { name: 'Features', href: '#features' },
+  { name: 'World', href: '#world' },
+  { name: 'Avatars', href: '#avatars' },
+  { name: 'Community', href: '#community' },
+];
+
+export default function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+const router=useRouter()
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.querySelector(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+    setMobileMenuOpen(false);
   };
 
   return (
-    <nav className="box w-full h-28 flex justify-between items-center fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-bggreen/70 px-6 lg:px-20">
-      {/* Logo */}
-      <div className="logo relative z-50 ">
-        <Image src={"/images/logo.png"} width={56} height={56} alt={"logo"} />
-      </div>
+    <header
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+        isScrolled
+          ? "bg-background/80 backdrop-blur-md shadow-md"
+          : "bg-transparent"
+      )}
+    >
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="flex items-center">
+          <Link href="/" className="flex items-center space-x-2">
+            <Globe className="h-8 w-8 text-neon-blue animate-pulse-glow" />
+            <span className="text-xl font-bold font-display tracking-wider text-glow animate-text-glow">
+              MetaVerse
+            </span>
+          </Link>
+        </div>
 
-      {/* Desktop Links */}
-      <div className="hidden lg:flex justify-center items-center gap-10 font-semibold text-xl text-white">
-        <Link href={"/"}>About</Link>
-        <Link href={"/"}>TOKENOMIC</Link>
-        <Link href={"/"}>BUY</Link>
-        <Link href={"/"}>FAQS</Link>
-        <Link href={"/"}>ROADMAP</Link>
-      </div>
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex md:items-center md:space-x-8">
+          {navigation.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => scrollToSection(item.href)}
+              className="text-sm font-medium text-gray-300 hover:text-white relative after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-neon-blue after:transition-all hover:after:w-full"
+            >
+              {item.name}
+            </button>
+          ))}
+          <Button variant="neon" size="sm" onClick={() => router.push("/room")}>
+            Join Now
+          </Button>
+        </div>
 
-      {/* Mobile Menu Icon */}
-      <div className="lg:hidden z-50">
-        {" "}
-        {/* Ensure the menu icon stays on top */}
-        <button
-          onClick={toggleMenu}
-          className="text-white focus:outline-none text-3xl"
+        {/* Mobile menu button */}
+        <div className="flex md:hidden">
+          <button
+            type="button"
+            className="text-gray-400 hover:text-white"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <span className="sr-only">Open main menu</span>
+            {mobileMenuOpen ? (
+              <X className="h-6 w-6" aria-hidden="true" />
+            ) : (
+              <Menu className="h-6 w-6" aria-hidden="true" />
+            )}
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile menu, show/hide based on menu state */}
+      {mobileMenuOpen && (
+        <motion.div
+          className="md:hidden"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.2 }}
         >
-          {isOpen ? "✕" : "☰"}
-        </button>
-      </div>
-
-      {/* Buy Button */}
-      <div className="hidden lg:flex" onClick={()=>router.push('/room')} >
-        <BuyButton title={'GOT TO METAVERSE'}  />
-      </div>
-
-      {/* Mobile Links (Animated using Framer Motion) */}
-      <motion.div
-        initial={{ height: 0 }}
-        animate={{ height: isOpen ? "100vh" : 0 }}
-        className={`${
-          isOpen ? "flex" : "hidden"
-        } lg:hidden fixed top-0 left-0 right-0 z-40backdrop-blur-lg bg-transparent/10 flex-col justify-center items-center text-white gap-10 font-semibold text-xl transition-all duration-300`}
-        style={{
-          overflow: "hidden", // Hide content overflow when height is 0
-        }}
-      >
-        <Link href={"/"} onClick={toggleMenu}>
-          About
-        </Link>
-        <Link href={"/"} onClick={toggleMenu}>
-          TOKENOMIC
-        </Link>
-        <Link href={"/"} onClick={toggleMenu}>
-          BUY
-        </Link>
-        <Link href={"/"} onClick={toggleMenu}>
-          FAQS
-        </Link>
-        <Link href={"/"} onClick={toggleMenu}>
-          ROADMAP
-        </Link>
-        <BuyButton title={'BUY FROGCOIN'} />
-      </motion.div>
-    </nav>
+          <div className="space-y-1 px-6 py-3 pb-5 backdrop-blur-md bg-background/80">
+            {navigation.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => scrollToSection(item.href)}
+                className="block w-full py-2 text-base font-medium text-gray-300 hover:text-white"
+              >
+                {item.name}
+              </button>
+            ))}
+            <Button variant="neon" size="sm" className="mt-3 w-full">
+              Join Now
+            </Button>
+          </div>
+        </motion.div>
+      )}
+    </header>
   );
-};
-
-export default Navbar;
+}
