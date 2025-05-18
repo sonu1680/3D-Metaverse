@@ -56,7 +56,8 @@ Ensure you have the following installed:
 
 ## 🎮 Demo Screenshots
 
-![Gameplay]![home](https://github.com/user-attachments/assets/91a42262-a358-438a-8c27-9a49c5ac04fb)
+![Gameplay]![home]!(https://github.com/user-attachments/assets/a1ae5c64-5b11-4b37-b218-2f0a701be6c0)
+
 
 ![Video Chat]![game](https://github.com/user-attachments/assets/688104ce-69ae-4c68-841d-ff570c83be42)
 
